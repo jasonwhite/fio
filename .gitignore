@@ -1,0 +1,4 @@
+*.swp
+*.lst
+*.o
+unittest
