@@ -74,7 +74,11 @@ unittest
 enum isSeekable(S) =
     is(typeof({
         S s = void;
-        ulong pos = s.seek(cast(long)42, From.start);
+        S.Mark m = void;
+        m = s.mark();
+        m = s.seek(5);
+        m = s.seek(m, 5);
+        m = s.seek(m);
     }));
 
 unittest
@@ -83,19 +87,13 @@ unittest
     static assert(!isSeekable!A);
 
     static struct B {
-        ulong seek(ulong pos, From from) { return 0; }
+        alias Mark = size_t;
+
+        Mark mark() { return 0; }
+        Mark seek(ptrdiff_t offset) { return 0; }
+        Mark seek(Mark m, ptrdiff_t offset = 0) { return 0; }
     }
     static assert(isSeekable!B);
-}
-
-/**
-  Seek position origin.
- */
-enum From
-{
-    start, /// Relative to the beginning.
-    here,  /// Relative to the current position.
-    end,   /// Relative to the end.
 }
 
 /**
@@ -123,6 +121,8 @@ class SeekException   : StreamException { this(string msg) { super(msg); } }
  */
 struct NullStream
 {
+    @disable this(this);
+
     /**
       Fills the buffer with zeros.
      */
@@ -141,19 +141,13 @@ struct NullStream
     {
         return data.length;
     }
-
-    /**
-      Seeking is meaningless when all data is the same.
-     */
-    ulong seek(long offset, From from = From.start)
-    {
-        return 0;
-    }
 }
 
 unittest
 {
     auto s = NullStream();
+
+    static assert(isSource!NullStream && isSink!NullStream);
 
     // reading
     auto buf = new ubyte[16];
