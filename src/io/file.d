@@ -108,18 +108,6 @@ struct FileStream
         open(name, flags);
     }
 
-    /// Ditto
-    void open(string name, string mode)
-    {
-        open(name, FileFlags(mode));
-    }
-
-    /// Ditto
-    this(string name, string mode)
-    {
-        open(name, FileFlags(mode));
-    }
-
     /**
       Takes control of a file handle.
 
@@ -181,6 +169,21 @@ struct FileStream
         assert(!FileStream(tf.name, FileFlags.writeExisting).ce);
         assert(FileStream(tf.name, FileFlags.writeNew).ce);
         assert(!FileStream(tf.name, FileFlags.writeAlways).ce);
+    }
+
+    /**
+      Opens a temporary file.
+     */
+    void open(FileFlags flags)
+    {
+        close();
+
+        // TODO
+    }
+
+    this(FileFlags flags)
+    {
+        open(flags);
     }
 
     /**
@@ -321,9 +324,50 @@ struct FileStream
     }
 
     /**
-      Sets the current position in the file relative to another position.
      */
-    ulong seek(T=ubyte)(long offset, From from = From.start)
+    static struct Mark
+    {
+        ulong pos;
+
+        // Special positions.
+        static immutable
+        {
+            Mark start = Mark(0);
+            Mark end   = Mark(-1);
+        }
+    }
+
+    /**
+      Marks the current position in the file.
+     */
+    @property Mark mark()
+    {
+        return seek(0);
+    }
+
+    // Seek relative to the current position
+    Mark seek(long offset)
+    {
+        return Mark(seek(From.here, offset));
+    }
+
+    // Seek relative to Mark. He would appreciate it.
+    Mark seek(Mark m, long offset = 0)
+    {
+        if (m == Mark.end)
+            return Mark(seek(From.end, offset));
+        else
+            return Mark(seek(From.start, offset + m.pos));
+    }
+
+    private enum From
+    {
+        start,
+        here,
+        end,
+    }
+
+    private ulong seek(From from, long offset)
     in { assert(isOpen); }
     body
     {
@@ -338,7 +382,7 @@ struct FileStream
                 case From.end:   whence = SEEK_END; break;
             }
 
-            auto pos = .lseek(_h, offset * T.sizeof, whence);
+            auto pos = .lseek(_h, offset, whence);
             errnoEnforce(pos != -1);
             return pos;
         }
@@ -354,7 +398,7 @@ struct FileStream
             }
 
             long pos = void;
-            errnoEnforce(.SetFilePointerEx(_h, offset * T.sizeof, &pos, whence));
+            errnoEnforce(.SetFilePointerEx(_h, offset, &pos, whence));
             return pos;
         }
     }
@@ -370,7 +414,13 @@ struct FileStream
 
         ubyte[data.length] buf;
 
-        assert(f.seek(7, From.start) == 7);
+        assert(f.seek(Mark.start, 5) == Mark(5));
+
+        assert(f.seek(5) == Mark(10));
+
+        assert(f.seek(Mark.end, -5) == Mark(data.length - 5));
+
+        /*assert(f.seek(7, From.start) == 7);
 
         assert(f.seek(3, From.here) == 10);
         assert(f.readData(buf[10 .. $]) == data[10 .. $]);
@@ -378,34 +428,9 @@ struct FileStream
         assert(f.seek(-8, From.end) == data.length - 8);
         assert(f.readData(buf[$-8 .. $]) == data[$-8 .. $]);
 
-        assert(f.seek!int(4) == 16);
-
         // Test large offsets
-        auto offset = cast(ulong)int.max + 100;
-        assert(f.seek(offset) == offset);
-    }
-
-    /**
-      Gets/sets the current position in the file.
-     */
-    @property ulong position()
-    {
-        return seek(0, From.here);
-    }
-
-    /// Ditto
-    @property void position(ulong pos)
-    {
-        seek(cast(long)pos, From.start);
-    }
-
-    unittest
-    {
-        auto tf = testFile();
-        auto f = FileStream(tf.name, FileFlags.writeEmpty);
-
-        f.position = 42;
-        assert(f.position == 42);
+        auto offset = cast(ulong)uint.max + 100;
+        assert(f.seek(offset) == offset);*/
     }
 
     /**
@@ -423,9 +448,9 @@ struct FileStream
         }
         else
         {
-            auto p = position;
-            scope (exit) position = p;
-            return seek(0, From.end);
+            auto m = mark;
+            scope (exit) seek(m);
+            return seek(Mark.end).pos;
         }
     }
 
@@ -438,9 +463,11 @@ struct FileStream
 
         immutable data = "0123456789";
         assert(f.writeData(data) == data.length);
-        f.position = 3;
+        auto m = f.seek(Mark(3));
 
         assert(f.length == data.length);
+
+        assert(f.mark == m);
     }
 }
 
@@ -538,7 +565,7 @@ struct FileFlags
 
         /**
           An existing file is opened with read access. This is the most commonly
-          used $(D FileFlag) configuration.
+          used configuration.
          */
         readExisting = FileFlags(Mode.open, Access.read),
 
@@ -697,7 +724,7 @@ struct FileFlags
 
         switch (s[1 .. $])
         {
-             case "": case "b":
+            case "": case "b":
                 break;
             case "+": case "+b": case "b+":
                 access = Access.readWrite;
