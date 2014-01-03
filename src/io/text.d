@@ -15,17 +15,23 @@ import io.stream;
 struct TextStream(S)
     if (isSource!S || isSink!S)
 {
-    private S _stream;
-    alias _stream this;
+    S stream;
+    alias stream this;
 
     @disable this(this);
 
+    this(S stream)
+    {
+        import std.algorithm : move;
+        this.stream = move(stream);
+    }
+
     // Call super class constructors.
-    this(Args...)(auto ref Args args)
+    /*this(Args...)(auto ref Args args)
         if(is(typeof(S(args))))
     {
         _stream = S(args);
-    }
+    }*/
 
     static if (isSource!S)
     {
@@ -95,4 +101,17 @@ struct TextStream(S)
             return 0;
         }
     }
+}
+
+TextStream!S text(S)(S stream)
+    if (isSource!S || isSink!S)
+{
+    import std.algorithm : move;
+    return TextStream!S(move(stream));
+}
+
+unittest
+{
+    alias S = TextStream!NullStream;
+    static assert(isSource!S && isSink!S);
 }
