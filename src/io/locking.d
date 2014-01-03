@@ -38,16 +38,26 @@ struct LockingStream(S)
         Mutex _mutex;
     }
 
-    alias _stream this;
+    alias stream this;
 
     @disable this(this);
 
-    this(Args...)(auto ref Args args)
-        if (is(typeof(S(args))))
+    this(S stream)
     {
-        _stream = S(args);
+        import std.algorithm : move;
+        _stream = move(stream);
         _mutex = new Mutex;
     }
+
+    // Locks the stream whenever it is accessed.
+    @property ref S stream()
+    {
+        lock();
+        scope (exit) unlock();
+        return _stream;
+    }
+
+    @disable @property void stream(S stream);
 
     /**
       Locks and unlocks the stream for the current scope.
@@ -97,31 +107,23 @@ struct LockingStream(S)
     {
         return _mutex.tryLock();
     }
+}
 
-    static if (isSource!S)
-    {
-        ubyte[] readData(ubyte[] buf)
-        {
-            auto lock = scopeLock();
-            return _stream.readData(buf);
-        }
-    }
+LockingStream!S locking(S)(S stream)
+    if (isSource!S || isSink!S)
+{
+    import std.algorithm : move;
+    return LockingStream!S(move(stream));
+}
 
-    static if (isSink!S)
-    {
-        size_t writeData(in ubyte[] data)
-        {
-            auto lock = scopeLock();
-            return _stream.writeData(data);
-        }
-    }
+unittest
+{
+    auto s = NullStream().locking;
 
-    static if (isSeekable!S)
-    {
-        ulong seek(long offset, From from = From.start)
-        {
-            auto lock = scopeLock();
-            return _stream.seek(offset, from);
-        }
-    }
+    // TODO
+
+    ubyte[4] buf;
+    s.readData(buf);
+
+    //s.stream = NullStream();
 }
