@@ -21,39 +21,39 @@ version (Posix)
         SEEK_END
     }
 
-	alias SysException = ErrnoException;
+    alias SysException = ErrnoException;
 }
 else version (Windows)
 {
     import core.sys.windows.windows;
 
-	// These are not declared in core.sys.windows.windows
-	extern (Windows) nothrow export
-	{
-		BOOL SetFilePointerEx(
-			HANDLE hFile,
-			long liDistanceToMove,
-			long* lpNewFilePointer,
-			DWORD dwMoveMethod
-		);
+    // These are not declared in core.sys.windows.windows
+    extern (Windows) nothrow export
+    {
+        BOOL SetFilePointerEx(
+            HANDLE hFile,
+            long liDistanceToMove,
+            long* lpNewFilePointer,
+            DWORD dwMoveMethod
+        );
 
-		BOOL GetFileSizeEx(
-			HANDLE hFile,
-			long* lpFileSize
-		);
-	}
+        BOOL GetFileSizeEx(
+            HANDLE hFile,
+            long* lpFileSize
+        );
+    }
 
-	class SysException : Exception
-	{
-		uint errCode;
+    class SysException : Exception
+    {
+        uint errCode;
 
-		this(string msg, string file = null, size_t line = 0)
-		{
-			import std.windows.syserror : sysErrorString;
-			errCode = GetLastError();
-			super(msg ~ " (" ~ sysErrorString(errCode) ~ ")", file, line);
-		}
-	}
+        this(string msg, string file = null, size_t line = 0)
+        {
+            import std.windows.syserror : sysErrorString;
+            errCode = GetLastError();
+            super(msg ~ " (" ~ sysErrorString(errCode) ~ ")", file, line);
+        }
+    }
 }
 else
 {
@@ -61,10 +61,10 @@ else
 }
 
 private T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
-	(T value, lazy string msg = null)
+    (T value, lazy string msg = null)
 {
-	if (!value) throw new SysException(msg, file, line);
-	return value;
+    if (!value) throw new SysException(msg, file, line);
+    return value;
 }
 
 /**
@@ -450,9 +450,9 @@ struct FileStream
         assert(f.seek(5) == Mark(10));
         assert(f.seek(Mark.end, -5) == Mark(data.length - 5));
 
-		// Test large offset
-		auto m = Mark(long.max);
-		assert(f.seek(m) == m);
+        // Test large offset
+        auto m = Mark(long.max);
+        assert(f.seek(m) == m);
     }
 
     /**
