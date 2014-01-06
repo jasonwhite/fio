@@ -5,8 +5,6 @@
  */
 module io.file;
 
-import io.stream;
-
 version (unittest)
     import file = std.file; // For easy file creation/deletion.
 
@@ -14,6 +12,7 @@ version (Posix)
 {
     import core.sys.posix.fcntl;
     import core.sys.posix.unistd;
+    import std.exception : ErrnoException;
 
     enum
     {
@@ -21,14 +20,51 @@ version (Posix)
         SEEK_CUR,
         SEEK_END
     }
+
+	alias SysException = ErrnoException;
 }
 else version (Windows)
 {
     import core.sys.windows.windows;
+
+	// These are not declared in core.sys.windows.windows
+	extern (Windows) nothrow export
+	{
+		BOOL SetFilePointerEx(
+			HANDLE hFile,
+			long liDistanceToMove,
+			long* lpNewFilePointer,
+			DWORD dwMoveMethod
+		);
+
+		BOOL GetFileSizeEx(
+			HANDLE hFile,
+			long* lpFileSize
+		);
+	}
+
+	class SysException : Exception
+	{
+		uint errCode;
+
+		this(string msg, string file = null, size_t line = 0)
+		{
+			import std.windows.syserror : sysErrorString;
+			errCode = GetLastError();
+			super(msg ~ " (" ~ sysErrorString(errCode) ~ ")", file, line);
+		}
+	}
 }
 else
 {
     static assert(false, "Unsupported platform.");
+}
+
+private T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
+	(T value, lazy string msg = null)
+{
+	if (!value) throw new SysException(msg, file, line);
+	return value;
 }
 
 /**
@@ -36,8 +72,6 @@ else
  */
 struct FileStream
 {
-    private import std.exception : errnoEnforce;
-
     // Platform-specific file handles
     version (Posix)
     {
@@ -55,7 +89,7 @@ struct FileStream
         // File handle
         Handle _h = InvalidHandle;
 
-        // Name of the file
+        // Name of the file. This is mainly used for error reporting.
         string _name;
     }
 
@@ -97,7 +131,7 @@ struct FileStream
             }
         }
 
-        errnoEnforce(_h != InvalidHandle, "Could not open file '"~ name ~"'");
+        sysEnforce(_h != InvalidHandle, "Could not open file '"~ name ~"'");
 
         _name = name;
     }
@@ -127,7 +161,7 @@ struct FileStream
 
       Params:
         h = The handle to assume control over. For Posix, this is a file
-            descriptor ($(D int). For Windows, this is an object handle ($(D
+            descriptor ($(D int)). For Windows, this is an object handle ($(D
             HANDLE)).
         name = An optional name to give to the handle.
      */
@@ -157,8 +191,8 @@ struct FileStream
         // Make sure the file does *not* exist
         try .file.remove(tf.name); catch (Exception e) {}
 
-        assert(FileStream(tf.name, FileFlags.readExisting).ce);
-        assert(FileStream(tf.name, FileFlags.writeExisting).ce);
+        assert( FileStream(tf.name, FileFlags.readExisting).ce);
+        assert( FileStream(tf.name, FileFlags.writeExisting).ce);
         assert(!FileStream(tf.name, FileFlags.writeNew).ce);
         assert(!FileStream(tf.name, FileFlags.writeAlways).ce);
 
@@ -167,7 +201,7 @@ struct FileStream
 
         assert(!FileStream(tf.name, FileFlags.readExisting).ce);
         assert(!FileStream(tf.name, FileFlags.writeExisting).ce);
-        assert(FileStream(tf.name, FileFlags.writeNew).ce);
+        assert( FileStream(tf.name, FileFlags.writeNew).ce);
         assert(!FileStream(tf.name, FileFlags.writeAlways).ce);
     }
 
@@ -196,11 +230,11 @@ struct FileStream
 
         version (Posix)
         {
-            errnoEnforce(.close(_h) != -1, "Could not close file '"~ _name ~"'");
+            sysEnforce(.close(_h) != -1, "Could not close file '"~ _name ~"'");
         }
         else version (Windows)
         {
-            errnoEnforce(CloseHandle(_h), "Could not close file: '"~ _name ~"'");
+            sysEnforce(CloseHandle(_h), "Could not close file '"~ _name ~"'");
         }
 
         _h = InvalidHandle;
@@ -237,7 +271,7 @@ struct FileStream
     /**
       Returns the internal file handle.
      */
-    @property Handle handle() const pure nothrow
+    @property const(Handle) handle() const pure nothrow
     in { assert(isOpen); }
     body
     {
@@ -262,14 +296,14 @@ struct FileStream
         version (Posix)
         {
             auto n = .read(_h, buf.ptr, buf.length * T.sizeof);
-            errnoEnforce(n != -1);
-            return buf[0 .. n];
+            sysEnforce(n != -1);
+            return buf[0 .. n/T.sizeof];
         }
         else version (Windows)
         {
-            DWORD read = void;
-            errnoEnforce(ReadFile(_h, buf.ptr, buf.length * T.sizeof, &read, null));
-            return buf[0 .. read];
+            DWORD n = void;
+            sysEnforce(ReadFile(_h, buf.ptr, buf.length * T.sizeof, &n, null));
+            return buf[0 .. n/T.sizeof];
         }
     }
 
@@ -297,13 +331,13 @@ struct FileStream
         version (Posix)
         {
             auto n = .write(_h, data.ptr, data.length * T.sizeof);
-            errnoEnforce(n != -1);
+            sysEnforce(n != -1);
             return cast(size_t)n;
         }
         else version (Windows)
         {
             DWORD written = void;
-            errnoEnforce(
+            sysEnforce(
                 WriteFile(_h, data.ptr, data.length * T.sizeof, &written, null)
                 );
             return written;
@@ -383,7 +417,7 @@ struct FileStream
             }
 
             auto pos = .lseek(_h, offset, whence);
-            errnoEnforce(pos != -1);
+            sysEnforce(pos != -1);
             return pos;
         }
         else version (Windows)
@@ -398,7 +432,7 @@ struct FileStream
             }
 
             long pos = void;
-            errnoEnforce(.SetFilePointerEx(_h, offset, &pos, whence));
+            sysEnforce(SetFilePointerEx(_h, offset, &pos, whence));
             return pos;
         }
     }
@@ -412,25 +446,13 @@ struct FileStream
         immutable data = "abcdefghijklmnopqrstuvwxyz";
         assert(f.writeData(data) == data.length);
 
-        ubyte[data.length] buf;
-
         assert(f.seek(Mark.start, 5) == Mark(5));
-
         assert(f.seek(5) == Mark(10));
-
         assert(f.seek(Mark.end, -5) == Mark(data.length - 5));
 
-        /*assert(f.seek(7, From.start) == 7);
-
-        assert(f.seek(3, From.here) == 10);
-        assert(f.readData(buf[10 .. $]) == data[10 .. $]);
-
-        assert(f.seek(-8, From.end) == data.length - 8);
-        assert(f.readData(buf[$-8 .. $]) == data[$-8 .. $]);
-
-        // Test large offsets
-        auto offset = cast(ulong)uint.max + 100;
-        assert(f.seek(offset) == offset);*/
+		// Test large offset
+		auto m = Mark(long.max);
+		assert(f.seek(m) == m);
     }
 
     /**
@@ -443,7 +465,7 @@ struct FileStream
         version (Windows)
         {
             long size = void;
-            errnoEnforce(GetFileSizeEx(_h, &size));
+            sysEnforce(GetFileSizeEx(_h, &size));
             return size;
         }
         else
@@ -845,7 +867,7 @@ struct FileFlags
     }
 }
 
-version(unittest)
+version (unittest)
 {
     // Generates a file name for testing and attempts to delete it on
     // destruction.
