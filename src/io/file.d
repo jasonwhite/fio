@@ -289,7 +289,7 @@ struct FileStream
     /**
       Read data from the file.
      */
-    T[] readData(T)(T[] buf)
+    T[] read(T)(T[] buf)
     in { assert(isOpen); }
     body
     {
@@ -317,14 +317,14 @@ struct FileStream
         ubyte[data.length] buf;
 
         auto f = FileStream(tf.name, FileFlags.readExisting);
-        assert(f.readData(buf) == data);
+        assert(f.read(buf) == data);
     }
 
     /**
       Write data to the file. Returns the number of bytes written (not the
       number of $(D T)s written).
      */
-    size_t writeData(T)(in T[] data)
+    size_t write(T)(in T[] data)
     in { assert(isOpen); }
     body
     {
@@ -351,7 +351,7 @@ struct FileStream
         immutable data = "\r\n\n\r\n";
         {
             auto f = FileStream(tf.name, FileFlags.writeAlways);
-            f.writeData(data);
+            f.write(data);
         }
 
         assert(file.read(tf.name) == data);
@@ -426,9 +426,9 @@ struct FileStream
 
             final switch (from)
             {
-                case From.start: whence = FILE_BEGIN; break;
+                case From.start: whence = FILE_BEGIN;   break;
                 case From.here:  whence = FILE_CURRENT; break;
-                case From.end:   whence = FILE_END; break;
+                case From.end:   whence = FILE_END;     break;
             }
 
             long pos = void;
@@ -444,7 +444,7 @@ struct FileStream
         auto f = FileStream(tf.name, FileFlags.updateAlways);
 
         immutable data = "abcdefghijklmnopqrstuvwxyz";
-        assert(f.writeData(data) == data.length);
+        assert(f.write(data) == data.length);
 
         assert(f.seek(Mark.start, 5) == Mark(5));
         assert(f.seek(5) == Mark(10));
@@ -484,7 +484,7 @@ struct FileStream
         assert(f.length == 0);
 
         immutable data = "0123456789";
-        assert(f.writeData(data) == data.length);
+        assert(f.write(data) == data.length);
         auto m = f.seek(Mark(3));
 
         assert(f.length == data.length);
