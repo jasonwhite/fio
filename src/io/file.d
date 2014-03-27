@@ -68,11 +68,11 @@ private T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 }
 
 /**
-  A basic file stream.
+  A light, cross-platform wrapper around low-level file operations.
  */
-struct FileStream
+struct File
 {
-    // Platform-specific file handles
+    // Platform-specific file handle
     version (Posix)
     {
         alias Handle = int;
@@ -84,21 +84,38 @@ struct FileStream
         enum Handle InvalidHandle = INVALID_HANDLE_VALUE;
     }
 
-    private
-    {
-        // File handle
-        Handle _h = InvalidHandle;
-
-        // Name of the file. This is mainly used for error reporting.
-        string _name;
-    }
+    private Handle _h = InvalidHandle;
 
     /**
-      File streams should not be copied because it complicates how the stream
-      should be closed. If multiple references are needed, either use $(D
-      std.typecons.RefCounted) or use the class wrapper.
+      When a $(D File) is copied, the internal file handle is duplicated.
      */
-    @disable this(this);
+    this(this)
+    {
+        version (Posix)
+        {
+            if (_h != InvalidHandle)
+                _h = .dup(_h);
+        }
+        else version (Windows)
+        {
+            static assert(0, "Not implemented yet.");
+        }
+    }
+
+    unittest
+    {
+        auto tf = testFile();
+
+        File a;
+
+        {
+            auto b = File(tf.name, FileFlags.writeAlways);
+            a = b; // Copy
+            b.write("abcd");
+        }
+
+        assert(a.position == 4);
+    }
 
     /**
       Opens a file by name. By default, an existing file is opened in read mode.
@@ -132,8 +149,6 @@ struct FileStream
         }
 
         sysEnforce(_h != InvalidHandle, "Could not open file '"~ name ~"'");
-
-        _name = name;
     }
 
     /// Ditto
@@ -163,18 +178,16 @@ struct FileStream
         h = The handle to assume control over. For Posix, this is a file
             descriptor ($(D int)). For Windows, this is an object handle ($(D
             HANDLE)).
-        name = An optional name to give to the handle.
      */
-    void open(Handle h, string name = null)
+    void open(typeof(_h) h)
     {
         _h = h;
-        _name = name;
     }
 
     /// Ditto
-    this(Handle h, string name = null)
+    this(typeof(_h) h)
     {
-        open(h, name);
+        open(h);
     }
 
     unittest
@@ -191,18 +204,18 @@ struct FileStream
         // Make sure the file does *not* exist
         try .file.remove(tf.name); catch (Exception e) {}
 
-        assert( FileStream(tf.name, FileFlags.readExisting).ce);
-        assert( FileStream(tf.name, FileFlags.writeExisting).ce);
-        assert(!FileStream(tf.name, FileFlags.writeNew).ce);
-        assert(!FileStream(tf.name, FileFlags.writeAlways).ce);
+        assert( File(tf.name, FileFlags.readExisting).ce);
+        assert( File(tf.name, FileFlags.writeExisting).ce);
+        assert(!File(tf.name, FileFlags.writeNew).ce);
+        assert(!File(tf.name, FileFlags.writeAlways).ce);
 
         // Make sure the file *does* exist.
         .file.write(tf.name, data);
 
-        assert(!FileStream(tf.name, FileFlags.readExisting).ce);
-        assert(!FileStream(tf.name, FileFlags.writeExisting).ce);
-        assert( FileStream(tf.name, FileFlags.writeNew).ce);
-        assert(!FileStream(tf.name, FileFlags.writeAlways).ce);
+        assert(!File(tf.name, FileFlags.readExisting).ce);
+        assert(!File(tf.name, FileFlags.writeExisting).ce);
+        assert( File(tf.name, FileFlags.writeNew).ce);
+        assert(!File(tf.name, FileFlags.writeAlways).ce);
     }
 
     /**
@@ -212,7 +225,16 @@ struct FileStream
     {
         close();
 
-        // TODO
+        // TODO: Generate a random name
+
+        version (Posix)
+        {
+            // TODO: Open the file and unlink the file name.
+        }
+        else version (Windows)
+        {
+            // TODO: ???
+        }
     }
 
     this(FileFlags flags)
@@ -226,19 +248,18 @@ struct FileStream
      */
     void close()
     {
-        if (_h == InvalidHandle) return;
+        if (_h == InvalidHandle) return; // Not open
 
         version (Posix)
         {
-            sysEnforce(.close(_h) != -1, "Could not close file '"~ _name ~"'");
+            sysEnforce(.close(_h) != -1, "Failed to close file");
         }
         else version (Windows)
         {
-            sysEnforce(CloseHandle(_h), "Could not close file '"~ _name ~"'");
+            sysEnforce(CloseHandle(_h), "Failed to close file");
         }
 
         _h = InvalidHandle;
-        _name = null;
     }
 
     /// Ditto
@@ -259,31 +280,20 @@ struct FileStream
     {
         auto tf = testFile();
 
-        FileStream f;
-
+        File f;
         assert(!f.isOpen);
         f.open(tf.name, FileFlags.writeAlways);
         assert(f.isOpen);
-        f.close();
-        assert(!f.isOpen);
     }
 
     /**
       Returns the internal file handle.
      */
-    @property const(Handle) handle() const pure nothrow
+    @property const(typeof(_h)) handle() const pure nothrow
     in { assert(isOpen); }
     body
     {
         return _h;
-    }
-
-    /**
-      The name of the file.
-     */
-    @property string name() const pure nothrow
-    {
-        return _name;
     }
 
     /**
@@ -316,7 +326,7 @@ struct FileStream
 
         ubyte[data.length] buf;
 
-        auto f = FileStream(tf.name, FileFlags.readExisting);
+        auto f = File(tf.name, FileFlags.readExisting);
         assert(f.read(buf) == data);
     }
 
@@ -324,13 +334,13 @@ struct FileStream
       Write data to the file. Returns the number of bytes written (not the
       number of $(D T)s written).
      */
-    size_t write(T)(in T[] data)
+    size_t write(in void[] data)
     in { assert(isOpen); }
     body
     {
         version (Posix)
         {
-            auto n = .write(_h, data.ptr, data.length * T.sizeof);
+            auto n = .write(_h, data.ptr, data.length);
             sysEnforce(n != -1);
             return cast(size_t)n;
         }
@@ -338,7 +348,7 @@ struct FileStream
         {
             DWORD written = void;
             sysEnforce(
-                WriteFile(_h, data.ptr, data.length * T.sizeof, &written, null)
+                WriteFile(_h, data.ptr, data.length, &written, null)
                 );
             return written;
         }
@@ -349,49 +359,51 @@ struct FileStream
         auto tf = testFile();
 
         immutable data = "\r\n\n\r\n";
-        {
-            auto f = FileStream(tf.name, FileFlags.writeAlways);
-            f.write(data);
-        }
+
+        File(tf.name, FileFlags.writeEmpty).write(data);
 
         assert(file.read(tf.name) == data);
     }
 
-    /**
-     */
-    static struct Mark
-    {
-        ulong pos;
+    /// An absolute position in the file.
+    alias Position = ulong;
 
-        // Special positions.
-        static immutable
-        {
-            Mark start = Mark(0);
-            Mark end   = Mark(-1);
-        }
-    }
+    /// Special positions.
+    static immutable Position
+        start = 0,
+          end = Position.max;
 
     /**
-      Marks the current position in the file.
+      Gets/sets the current position in the file.
      */
-    @property Mark mark()
+    @property Position position()
     {
-        return seek(0);
+        return skip(0);
     }
 
-    // Seek relative to the current position
-    Mark seek(long offset)
+    /// Ditto
+    @property void position(Position p)
     {
-        return Mark(seek(From.here, offset));
+        seekTo(p);
     }
 
-    // Seek relative to Mark. He would appreciate it.
-    Mark seek(Mark m, long offset = 0)
+    /**
+      Seeks relative to the current position
+     */
+    Position skip(long offset)
     {
-        if (m == Mark.end)
-            return Mark(seek(From.end, offset));
+        return seek(From.here, offset);
+    }
+
+    /**
+      Seeks relative to a position.
+     */
+    Position seekTo(Position p, long offset = 0)
+    {
+        if (p == end)
+            return seek(From.end, offset);
         else
-            return Mark(seek(From.start, offset + m.pos));
+            return seek(From.start, offset + p);
     }
 
     private enum From
@@ -417,7 +429,7 @@ struct FileStream
             }
 
             auto pos = .lseek(_h, offset, whence);
-            sysEnforce(pos != -1);
+            sysEnforce(pos != -1, "Failed to seek to position");
             return pos;
         }
         else version (Windows)
@@ -432,7 +444,8 @@ struct FileStream
             }
 
             long pos = void;
-            sysEnforce(SetFilePointerEx(_h, offset, &pos, whence));
+            sysEnforce(SetFilePointerEx(_h, offset, &pos, whence),
+                "Failed to seek to position");
             return pos;
         }
     }
@@ -441,18 +454,18 @@ struct FileStream
     {
         auto tf = testFile();
 
-        auto f = FileStream(tf.name, FileFlags.updateAlways);
+        auto f = File(tf.name, FileFlags.updateAlways);
 
         immutable data = "abcdefghijklmnopqrstuvwxyz";
         assert(f.write(data) == data.length);
 
-        assert(f.seek(Mark.start, 5) == Mark(5));
-        assert(f.seek(5) == Mark(10));
-        assert(f.seek(Mark.end, -5) == Mark(data.length - 5));
+        assert(f.seekTo(f.start, 5) == 5);
+        assert(f.skip(5) == 10);
+        assert(f.seekTo(f.end, -5) == data.length - 5);
 
         // Test large offset
-        auto m = Mark(long.max);
-        assert(f.seek(m) == m);
+        Position p = cast(long)int.max * 2;
+        assert(f.seekTo(f.start, p) == p);
     }
 
     /**
@@ -470,26 +483,27 @@ struct FileStream
         }
         else
         {
-            auto m = mark;
-            scope (exit) seek(m);
-            return seek(Mark.end).pos;
+            // FIXME: This should be an atomic operation
+            auto m = position;
+            scope (exit) seekTo(m);
+            return seekTo(end);
         }
     }
 
     unittest
     {
         auto tf = testFile();
-        auto f = FileStream(tf.name, FileFlags.writeEmpty);
+        auto f = File(tf.name, FileFlags.writeEmpty);
 
         assert(f.length == 0);
 
         immutable data = "0123456789";
         assert(f.write(data) == data.length);
-        auto m = f.seek(Mark(3));
+        auto m = f.seekTo(3);
 
         assert(f.length == data.length);
 
-        assert(f.mark == m);
+        assert(f.position == m);
     }
 }
 
@@ -583,55 +597,56 @@ struct FileFlags
     Share share;
 
     /// Typical file flag configurations:
-    enum FileFlags
-
+    static immutable
+    {
         /**
           An existing file is opened with read access. This is the most commonly
           used configuration.
          */
-        readExisting = FileFlags(Mode.open, Access.read),
+        FileFlags readExisting = FileFlags(Mode.open, Access.read);
 
         /**
           An existing file is opened with write access.
          */
-        writeExisting = FileFlags(Mode.open, Access.write),
+        FileFlags writeExisting = FileFlags(Mode.open, Access.write);
 
         /**
           A new file is created with write access.
          */
-        writeNew = FileFlags(Mode.create, Access.write),
+        FileFlags writeNew = FileFlags(Mode.create, Access.write);
 
         /**
           A new file is either opened or created with write access.
          */
-        writeAlways = FileFlags(Mode.openOrCreate, Access.write),
+        FileFlags writeAlways = FileFlags(Mode.openOrCreate, Access.write);
 
         /**
-          A new file is opened or created, truncated if necessary, with write
+          A new file is either opened or created, truncated if necessary, with write
           access. This ensures that an $(I empty) file is opened.
          */
-        writeEmpty = FileFlags(Mode.openOrCreate | Mode.truncate, Access.write),
+        FileFlags writeEmpty = FileFlags(Mode.openOrCreate | Mode.truncate, Access.write);
 
         /**
           An existing file is opened with read/write access.
          */
-        updateExisting = readExisting | writeExisting,
+        FileFlags updateExisting = readExisting | writeExisting;
 
         /**
           A new file is created with read/write access.
          */
-        updateNew = FileFlags(Mode.create, Access.readWrite),
+        FileFlags updateNew = FileFlags(Mode.create, Access.readWrite);
 
         /**
-          A new file is opened or created with read/write access.
+          A new file is either opened or created with read/write access.
          */
-        updateAlways = readExisting | writeNew,
+        FileFlags updateAlways = readExisting | writeNew;
 
         /**
-          A new file is opened or created, truncated if necessary, with
+          A new file is either opened or created, truncated if necessary, with
           read/write access. This ensures that an $(I empty) file is opened.
          */
-        updateEmpty = writeEmpty | Access.readWrite;
+        FileFlags updateEmpty = writeEmpty | Access.readWrite;
+    }
 
     /**
       Explicitly set the file mode.
@@ -650,17 +665,17 @@ struct FileFlags
      */
     this(string mode) pure
     {
-        modeString = mode;
+        this = parse(mode);
     }
 
     /**
       Combine file flags.
      */
-    FileFlags opBinary(string op, T)(T rhs) const pure nothrow
+    FileFlags opBinary(string op, T)(const T rhs) const pure nothrow
         if (op == "|" && (
-            is(T == FileFlags) || is(T == Mode) ||
-            is(T == Access) || is(T == Share))
-            )
+            is(T : const FileFlags) || is(T : const Mode) ||
+            is(T : const Access) || is(T : const Share)
+            ))
     {
         FileFlags ff = this;
         ff |= rhs;
@@ -668,24 +683,24 @@ struct FileFlags
     }
 
     /// Ditto
-    void opOpAssign(string op, T)(T rhs) pure nothrow
+    void opOpAssign(string op, T)(const T rhs) pure nothrow
         if (op == "|" && (
-            is(T == FileFlags) || is(T == Mode) ||
-            is(T == Access)    || is(T == Share)
+            is(T : const FileFlags) || is(T : const Mode) ||
+            is(T : const Access) || is(T : const Share)
             ))
     {
-        static if (is(T == FileFlags))
+        static if (is(T : const FileFlags))
         {
-            mode |= rhs.mode;
+            mode   |= rhs.mode;
             access |= rhs.access;
-            share |= rhs.share;
+            share  |= rhs.share;
         }
-        else static if (is(T == Mode))
-            mode |= rhs;
-        else static if (is(T == Access))
+        else static if (is(T : const Mode))
+            mode   |= rhs;
+        else static if (is(T : const Access))
             access |= rhs;
-        else static if (is(T == Share))
-            share |= rhs;
+        else static if (is(T : const Share))
+            share  |= rhs;
     }
 
     ///
@@ -703,7 +718,7 @@ struct FileFlags
      */
     void opAssign(string mode) pure
     {
-        modeString = mode;
+        this = parse(mode);
     }
 
     /**
@@ -714,50 +729,61 @@ struct FileFlags
       [rwa](+b\|b+\|+\|b)\?
       ---
      */
-    @property void modeString(string s) pure
+    static FileFlags parse(string s) pure
     {
-        if (s.length == 0)
-            throw new Exception("Mode string is empty");
+        import std.range : front, popFront, empty;
 
-        Mode mode;
-        Access access;
+        if (s.empty)
+            throw new Exception("mode string is empty");
 
-        switch (s[0])
+        FileFlags flags = void;
+        flags.share = Share.init;
+
+        switch (s.front)
         {
             case 'r':
-                access = Access.read;
-                mode = Mode.open;
+                flags.access = Access.read;
+                flags.mode   = Mode.open;
                 break;
             case 'w':
-                access = Access.write;
-                mode = Mode.openOrCreate | Mode.truncate;
+                flags.access = Access.write;
+                flags.mode   = Mode.openOrCreate | Mode.truncate;
                 break;
             case 'a':
-                access = Access.write;
-                mode = Mode.create | Mode.append;
+                flags.access = Access.write;
+                flags.mode   = Mode.create | Mode.append;
                 break;
             default:
-                throw new Exception("Invalid mode string \""~ s ~"\"");
+                throw new Exception("invalid mode string");
         }
 
-        // Note that the binary flag is ignored. File streams are always binary
-        // streams. Text functionality is accessed via $(D io.text)
+        s.popFront();
+
+        // Note that the binary flag is ignored. Here, file streams are always
+        // binary streams. Text functionality is accessed via $(D io.text)
         // instead.
-
-        switch (s[1 .. $])
+        foreach (i; 0 .. 2)
         {
-            case "": case "b":
-                break;
-            case "+": case "+b": case "b+":
-                access = Access.readWrite;
-                break;
-            default:
-                throw new Exception("Invalid mode string \""~ s ~"\"");
+            if (s.empty) return flags;
+
+            switch (s.front)
+            {
+                case 'b':
+                    break;
+                case '+':
+                    flags.access = Access.readWrite;
+                    break;
+                default:
+                    throw new Exception("invalid mode string");
+            }
+
+            s.popFront();
         }
 
-        this.mode = mode;
-        this.access = access;
-        this.share = Share.init;
+        if (!s.empty)
+            throw new Exception("extraneous characters in mode string");
+
+        return flags;
     }
 
     unittest
@@ -869,16 +895,21 @@ struct FileFlags
 
 version (unittest)
 {
-    // Generates a file name for testing and attempts to delete it on
-    // destruction.
+    /**
+      Generates a file name for testing and attempts to delete it on
+      destruction.
+     */
     private auto testFile(string file = __FILE__, size_t line = __LINE__)
     {
         import std.conv : text;
         import std.path : baseName;
+        import std.file : tempDir;
 
         static struct TestFile
         {
             string name;
+
+            alias name this;
 
             ~this()
             {
@@ -887,6 +918,6 @@ version (unittest)
             }
         }
 
-        return TestFile(text(".deleteme-", baseName(file), ".", line));
+        return TestFile(text(tempDir, "/.deleteme-", baseName(file), ".", line));
     }
 }
