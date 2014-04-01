@@ -219,30 +219,6 @@ struct File
     }
 
     /**
-      Opens a temporary file.
-     */
-    void open(FileFlags flags)
-    {
-        close();
-
-        // TODO: Generate a random name
-
-        version (Posix)
-        {
-            // TODO: Open the file and unlink the file name.
-        }
-        else version (Windows)
-        {
-            // TODO: ???
-        }
-    }
-
-    this(FileFlags flags)
-    {
-        open(flags);
-    }
-
-    /**
       Closes the file stream. Typically, it is better to let the destructor take
       care of closing the file.
      */
@@ -286,6 +262,44 @@ struct File
         assert(f.isOpen);
     }
 
+    struct Pipe
+    {
+        File readEnd;  // Read end
+        File writeEnd; // Write end
+    }
+
+    /**
+      Creates a unidirectional pipe that can be written to on one end and read
+      from on the other.
+     */
+    static Pipe pipe()
+    {
+        version (Posix)
+        {
+            int fd[2];
+            sysEnforce(.pipe(fd) != -1);
+            return Pipe(File(fd[0]), File(fd[1]));
+        }
+        else version(Windows)
+        {
+            Handle readEnd, writeEnd;
+            sysEnforce(CreatePipe(&readEnd, &writeEnd, null, 0));
+            return Pipe(File(readEnd), File(writeEnd));
+        }
+    }
+
+    ///
+    unittest
+    {
+        auto p = pipe();
+
+        immutable message = "Indubitably";
+        p.writeEnd.write(message);
+
+        char[message.length] buf;
+        assert(buf[0 .. p.readEnd.read(buf)] == message);
+    }
+
     /**
       Returns the internal file handle.
      */
@@ -299,21 +313,21 @@ struct File
     /**
       Read data from the file.
      */
-    T[] read(T)(T[] buf)
+    size_t read(void[] buf)
     in { assert(isOpen); }
     body
     {
         version (Posix)
         {
-            auto n = .read(_h, buf.ptr, buf.length * T.sizeof);
+            auto n = .read(_h, buf.ptr, buf.length);
             sysEnforce(n != -1);
-            return buf[0 .. n/T.sizeof];
+            return n;
         }
         else version (Windows)
         {
             DWORD n = void;
-            sysEnforce(ReadFile(_h, buf.ptr, buf.length * T.sizeof, &n, null));
-            return buf[0 .. n/T.sizeof];
+            sysEnforce(ReadFile(_h, buf.ptr, buf.length, &n, null));
+            return n;
         }
     }
 
@@ -324,10 +338,10 @@ struct File
         immutable data = "\r\n\n\r\n";
         file.write(tf.name, data);
 
-        ubyte[data.length] buf;
+        char[data.length] buf;
 
         auto f = File(tf.name, FileFlags.readExisting);
-        assert(f.read(buf) == data);
+        assert(buf[0 .. f.read(buf)] == data);
     }
 
     /**
@@ -368,6 +382,9 @@ struct File
     /// An absolute position in the file.
     alias Position = ulong;
 
+    /// An offset from an absolute position
+    alias Offset = long;
+
     /// Special positions.
     static immutable Position
         start = 0,
@@ -390,7 +407,7 @@ struct File
     /**
       Seeks relative to the current position
      */
-    Position skip(long offset)
+    Position skip(Offset offset)
     {
         return seek(From.here, offset);
     }
@@ -398,7 +415,7 @@ struct File
     /**
       Seeks relative to a position.
      */
-    Position seekTo(Position p, long offset = 0)
+    Position seekTo(Position p, Offset offset = 0)
     {
         if (p == end)
             return seek(From.end, offset);
@@ -413,7 +430,7 @@ struct File
         end,
     }
 
-    private ulong seek(From from, long offset)
+    private ulong seek(From from, Offset offset)
     in { assert(isOpen); }
     body
     {
@@ -464,29 +481,30 @@ struct File
         assert(f.seekTo(f.end, -5) == data.length - 5);
 
         // Test large offset
-        Position p = cast(long)int.max * 2;
+        Position p = cast(Offset)int.max * 2;
         assert(f.seekTo(f.start, p) == p);
     }
 
     /**
       Gets the size of the file.
      */
-    @property ulong length()
+    @property Position length()
     in { assert(isOpen); }
     body
     {
-        version (Windows)
+        version(Posix)
+        {
+            // Note that this uses stat to get the length of the file instead of
+            // the seek method. This method is safer because it is atomic.
+            stat_t stat;
+            sysEnforce(.fstat(_h, &stat) != -1);
+            return stat.st_size;
+        }
+        else version (Windows)
         {
             long size = void;
             sysEnforce(GetFileSizeEx(_h, &size));
             return size;
-        }
-        else
-        {
-            // FIXME: This should be an atomic operation
-            auto m = position;
-            scope (exit) seekTo(m);
-            return seekTo(end);
         }
     }
 
@@ -899,7 +917,7 @@ version (unittest)
       Generates a file name for testing and attempts to delete it on
       destruction.
      */
-    private auto testFile(string file = __FILE__, size_t line = __LINE__)
+    auto testFile(string file = __FILE__, size_t line = __LINE__)
     {
         import std.conv : text;
         import std.path : baseName;
