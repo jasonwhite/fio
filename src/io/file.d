@@ -1,7 +1,7 @@
 /**
-  Copyright: Copyright Jason White, 2013-
-  License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
-  Authors:   Jason White
+ * Copyright: Copyright Jason White, 2013-
+ * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Authors:   Jason White
  */
 module io.file;
 
@@ -60,7 +60,7 @@ else
     static assert(false, "Unsupported platform.");
 }
 
-private T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
+T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
     (T value, lazy string msg = null)
 {
     if (!value) throw new SysException(msg, file, line);
@@ -68,7 +68,7 @@ private T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 }
 
 /**
-  A light, cross-platform wrapper around low-level file operations.
+ * A light, cross-platform wrapper around low-level file operations.
  */
 struct File
 {
@@ -87,7 +87,7 @@ struct File
     private Handle _h = InvalidHandle;
 
     /**
-      When a $(D File) is copied, the internal file handle is duplicated.
+     * When a $(D File) is copied, the internal file handle is duplicated.
      */
     this(this)
     {
@@ -158,26 +158,26 @@ struct File
     }
 
     /**
-      Takes control of a file handle.
-
-      It is assumed that we have exclusive control over the file handle and will
-      be closed upon destruction as usual.
-
-      This function is useful in a couple of situations:
-      $(UL
-        $(LI
-          The file must be opened with flags that cannot be obtained via $(D
-          FileFlags)
-        )
-        $(LI
-          A special file handle must be opened (e.g., $(D stdout), a pipe).
-        )
-      )
-
-      Params:
-        h = The handle to assume control over. For Posix, this is a file
-            descriptor ($(D int)). For Windows, this is an object handle ($(D
-            HANDLE)).
+     * Takes control of a file handle.
+     *
+     * It is assumed that we have exclusive control over the file handle and will
+     * be closed upon destruction as usual.
+     *
+     * This function is useful in a couple of situations:
+     * $(UL
+     *   $(LI
+     *     The file must be opened with flags that cannot be obtained via $(D
+     *     FileFlags)
+     *   )
+     *   $(LI
+     *     A special file handle must be opened (e.g., $(D stdout), a pipe).
+     *   )
+     * )
+     *
+     * Params:
+     *   h = The handle to assume control over. For Posix, this is a file
+     *       descriptor ($(D int)). For Windows, this is an object handle ($(D
+     *       HANDLE)).
      */
     void open(typeof(_h) h)
     {
@@ -219,8 +219,8 @@ struct File
     }
 
     /**
-      Closes the file stream. Typically, it is better to let the destructor take
-      care of closing the file.
+     * Closes the file stream. Typically, it is better to let the destructor take
+     * care of closing the file.
      */
     void close()
     {
@@ -245,7 +245,7 @@ struct File
     }
 
     /**
-      Returns true if the file is open.
+     * Returns true if the file is open.
      */
     @property bool isOpen() const pure nothrow
     {
@@ -269,8 +269,8 @@ struct File
     }
 
     /**
-      Creates a unidirectional pipe that can be written to on one end and read
-      from on the other.
+     * Creates a unidirectional pipe that can be written to on one end and read
+     * from on the other.
      */
     static Pipe pipe()
     {
@@ -301,9 +301,9 @@ struct File
     }
 
     /**
-      Returns the internal file handle.
+     * Returns the internal file handle.
      */
-    @property const(typeof(_h)) handle() const pure nothrow
+    @property typeof(_h) handle() pure nothrow
     in { assert(isOpen); }
     body
     {
@@ -311,7 +311,7 @@ struct File
     }
 
     /**
-      Read data from the file.
+     * Read data from the file.
      */
     size_t read(void[] buf)
     in { assert(isOpen); }
@@ -345,8 +345,8 @@ struct File
     }
 
     /**
-      Write data to the file. Returns the number of bytes written (not the
-      number of $(D T)s written).
+     * Write data to the file. Returns the number of bytes written (not the
+     * number of $(D T)s written).
      */
     size_t write(in void[] data)
     in { assert(isOpen); }
@@ -391,7 +391,7 @@ struct File
           end = Position.max;
 
     /**
-      Gets/sets the current position in the file.
+     * Gets/sets the current position in the file.
      */
     @property Position position()
     {
@@ -405,7 +405,7 @@ struct File
     }
 
     /**
-      Seeks relative to the current position
+     * Seeks relative to the current position
      */
     Position skip(Offset offset)
     {
@@ -413,7 +413,7 @@ struct File
     }
 
     /**
-      Seeks relative to a position.
+     * Seeks relative to a position.
      */
     Position seekTo(Position p, Offset offset = 0)
     {
@@ -486,7 +486,7 @@ struct File
     }
 
     /**
-      Gets the size of the file.
+     * Gets the size of the file.
      */
     @property Position length()
     in { assert(isOpen); }
@@ -523,10 +523,201 @@ struct File
 
         assert(f.position == m);
     }
+
+    /**
+     * Checks if the file is a terminal.
+     */
+    @property bool isTerminal()
+    {
+        version (Posix)
+        {
+            return isatty(_h) == 1;
+        }
+        else version (Windows)
+        {
+            // TODO: Use GetConsoleMode
+            static assert(false, "Implement me!");
+        }
+    }
+
+    /*void lock()
+    {
+        version (Linux)
+            sysEnforce(.flock(_h, LOCK_SH) == 0, "Failed to lock file.");
+    }
+
+    void unlock()
+    {
+        version (Linux)
+            sysEnforce(.flock(_h, LOCK_UN) == 0, "Failed to unlock file.");
+    }*/
 }
 
 /**
-  Specifies in what mode the file should be opened.
+ * A memory mapped file.
+ */
+struct MmFile
+{
+    private
+    {
+        version (Posix)
+        {
+            import core.sys.posix.sys.mman;
+        }
+        else version (Windows)
+        {
+            static assert(false, "Not implemented yet.");
+        }
+
+        // Memory mapped data.
+        void[] data;
+    }
+
+    alias data this;
+
+    alias Position = File.Position;
+    alias Offset   = File.Offset;
+
+    // Converts the Access enum to POSIX protection flags.
+    version (Posix)
+    static private int prot(Access access) pure nothrow
+    {
+        int prot = PROT_NONE;
+        if (access & Access.read)    prot |= PROT_READ;
+        if (access & Access.write)   prot |= PROT_WRITE;
+        if (access & Access.execute) prot |= PROT_EXEC;
+        return prot;
+    }
+
+    /**
+     * Maps the contents of the specified file into memory.
+     *
+     * Params:
+     *   file = Open file to be mapped. The file may be closed after being
+     *      mapped to memory.
+     *   access = Access flags of the memory region.
+     *   length = Length of the file. If 0, the length is taken to be the size
+     *      of the file minus the offset.
+     *   offset = Position within the file to start the mapping. This must be
+     *      a multiple of the page size (generally 4096).
+     *   share = If true, changes are visible to other processes. If false,
+     *      changes are not visible to other processes and are never written
+     *      back to the file. True by default.
+     *   address = The preferred memory address to map the file to. This is just
+     *      a hint, the system is may or may not use this address. If null, the
+     *      system chooses an appropriate address.
+     *
+     * Throws: SysException
+     */
+    this()(auto ref File file, size_t length = 0, Position offset = 0,
+            Access access = Access.readWrite, bool share = true,
+            void* address = null)
+    {
+        version (Posix)
+        {
+            if (length == 0)
+                length = file.length - offset;
+
+            int flags = share ? MAP_SHARED : MAP_PRIVATE;
+
+            void *p = mmap(
+                address,          // Preferred address
+                length,           // Length of the memory map
+                prot(access),     // Protection flags
+                flags,            // Mapping flags
+                file.handle,      // File descriptor
+                cast(off_t)offset // Offset within the file
+                );
+
+            sysEnforce(p != MAP_FAILED, "Failed to memory map file");
+
+            data = p[0 .. length];
+        }
+    }
+
+    /**
+     * An anonymous mapping. An anonymous mapping is not backed by any file. Its
+     * contents are initialized to 0. This is effectively equivalent to
+     * allocating memory.
+     */
+    /*this(Access access, size_t length, bool share = true, void* address = null)
+    {
+        version (Posix)
+        {
+            int flags = MAP_ANON | (share ? MAP_SHARED : MAP_PRIVATE);
+            void *p = mmap(address, length, prot(access), flags, -1, 0);
+            sysEnforce(p != MAP_FAILED, "Failed to memory map file");
+
+            data = p[0 .. length];
+        }
+    }*/
+
+    /**
+     * Unmaps the file from memory and writes back any changes to the file
+     * system.
+     */
+    ~this()
+    {
+        version (Posix)
+        {
+            int ret = munmap(data.ptr, data.length);
+            sysEnforce(ret == 0, "Failed to unmap memory");
+        }
+    }
+
+    /**
+     * TODO: Write a description.
+     */
+    /*void remap(size_t length, size_t offset = 0, bool share = true)
+    {
+        version (Posix)
+        {
+            int flags = (share ? MAP_SHARED : MAP_PRIVATE);
+            void *p = mremap(data.ptr, data.length, flags, -1, offset);
+            sysEnforce(ret == 0, "Failed to remap memory");
+        }
+    }*/
+
+    /**
+     * Write any pending changes to the file on the file system.
+     */
+    void sync()
+    {
+        version (Posix)
+        {
+            int ret = msync(data.ptr, data.length, MS_SYNC);
+            sysEnforce(ret == 0, "Failed to synchronize memory map");
+        }
+    }
+}
+
+unittest
+{
+    //auto tf = testFile();
+
+    {
+        // Generate some data to write to the file.
+        char[8192] data;
+        foreach (i, ref e; data)
+            e = 'a' + (i % 26);
+
+        file.write("testfile.txt", data);
+    }
+
+    {
+        auto mmfile = File("testfile.txt", FileFlags.updateExisting)
+            .MmFile(4, 4096);
+
+        auto text = cast(char[])mmfile;
+
+        immutable newdata = "TEST";
+
+        text[0 .. newdata.length] = newdata[];
+    }
+}
+
+/**
+ * Specifies in what mode the file should be opened.
  */
 enum Mode
 {
@@ -540,32 +731,32 @@ enum Mode
     open = 1 << 0,
 
     /**
-      Creates a new file. Fails if the file is opened without write access.
-      Fails if the file already exists and not combined with truncate or open.
+     * Creates a new file. Fails if the file is opened without write access.
+     * Fails if the file already exists and not combined with truncate or open.
      */
     create = 1 << 1,
 
     /**
-      Opens the file if it already exists or creates it if it does not.
+     * Opens the file if it already exists or creates it if it does not.
      */
     openOrCreate = open | create,
 
     /**
-      Allows only appending to the end of the file. Seek operations only affect
-      subsequent reads. Upon writing, the file pointer gets set to the end of
-      the file.
+     * Allows only appending to the end of the file. Seek operations only affect
+     * subsequent reads. Upon writing, the file pointer gets set to the end of
+     * the file.
      */
     append = 1 << 2,
 
     /**
-      Truncates the file. This has no effect if the file has been created anew.
-      Fails if the file is opened without write access.
+     * Truncates the file. This has no effect if the file has been created anew.
+     * Fails if the file is opened without write access.
      */
     truncate = 1 << 3,
 }
 
 /**
-  Specifies how to access the file.
+ * Specifies how to access the file.
  */
 enum Access
 {
@@ -578,14 +769,17 @@ enum Access
     /// Allows only write operations on the file.
     write = 1 << 1,
 
+    /// Allows data to be executed. Only used when memory mapping a file.
+    execute = 1 << 2,
+
     /// Allows both read and write operations on the file.
     readWrite = read | write,
 }
 
 /**
-  Specifies what other processes are allowed to do to the file.
-
-  TODO: Keep this? It's currently only used by Windows.
+ * Specifies what other processes are allowed to do to the file.
+ *
+ * TODO: Keep this? It's currently only used by Windows.
  */
 enum Share
 {
@@ -606,7 +800,7 @@ enum Share
 }
 
 /**
-  File flags determine how a file stream is created and used.
+ * File flags determine how a file stream is created and used.
  */
 struct FileFlags
 {
@@ -618,56 +812,56 @@ struct FileFlags
     static immutable
     {
         /**
-          An existing file is opened with read access. This is the most commonly
-          used configuration.
+         * An existing file is opened with read access. This is the most
+         * commonly used configuration.
          */
         FileFlags readExisting = FileFlags(Mode.open, Access.read);
 
         /**
-          An existing file is opened with write access.
+         * An existing file is opened with write access.
          */
         FileFlags writeExisting = FileFlags(Mode.open, Access.write);
 
         /**
-          A new file is created with write access.
+         * A new file is created with write access.
          */
         FileFlags writeNew = FileFlags(Mode.create, Access.write);
 
         /**
-          A new file is either opened or created with write access.
+         * A new file is either opened or created with write access.
          */
         FileFlags writeAlways = FileFlags(Mode.openOrCreate, Access.write);
 
         /**
-          A new file is either opened or created, truncated if necessary, with write
-          access. This ensures that an $(I empty) file is opened.
+         * A new file is either opened or created, truncated if necessary, with
+         * write access. This ensures that an $(I empty) file is opened.
          */
         FileFlags writeEmpty = FileFlags(Mode.openOrCreate | Mode.truncate, Access.write);
 
         /**
-          An existing file is opened with read/write access.
+         * An existing file is opened with read/write access.
          */
         FileFlags updateExisting = readExisting | writeExisting;
 
         /**
-          A new file is created with read/write access.
+         * A new file is created with read/write access.
          */
         FileFlags updateNew = FileFlags(Mode.create, Access.readWrite);
 
         /**
-          A new file is either opened or created with read/write access.
+         * A new file is either opened or created with read/write access.
          */
         FileFlags updateAlways = readExisting | writeNew;
 
         /**
-          A new file is either opened or created, truncated if necessary, with
-          read/write access. This ensures that an $(I empty) file is opened.
+         * A new file is either opened or created, truncated if necessary, with
+         * read/write access. This ensures that an $(I empty) file is opened.
          */
         FileFlags updateEmpty = writeEmpty | Access.readWrite;
     }
 
     /**
-      Explicitly set the file mode.
+     * Explicitly set the file mode.
      */
     this(Mode mode = Mode.init,
          Access access = Access.init,
@@ -679,7 +873,7 @@ struct FileFlags
     }
 
     /**
-      Construct the file flags from a mode string.
+     * Construct the file flags from a mode string.
      */
     this(string mode) pure
     {
@@ -687,7 +881,7 @@ struct FileFlags
     }
 
     /**
-      Combine file flags.
+     * Combine file flags.
      */
     FileFlags opBinary(string op, T)(const T rhs) const pure nothrow
         if (op == "|" && (
@@ -732,7 +926,7 @@ struct FileFlags
     }
 
     /**
-      Set flags via a mode string.
+     * Set flags via a mode string.
      */
     void opAssign(string mode) pure
     {
@@ -740,12 +934,12 @@ struct FileFlags
     }
 
     /**
-      Parses an fopen-style mode string such as "rb+".
-
-      The regular expression corresponding to a mode string is
-      ---
-      [rwa](+b\|b+\|+\|b)\?
-      ---
+     * Parses an fopen-style mode string such as "rb+".
+     *
+     * The regular expression corresponding to a mode string is
+     * ---
+     * [rwa](\+b|b\+|\+|b)?
+     * ---
      */
     static FileFlags parse(string s) pure
     {
@@ -914,8 +1108,8 @@ struct FileFlags
 version (unittest)
 {
     /**
-      Generates a file name for testing and attempts to delete it on
-      destruction.
+     * Generates a file name for testing and attempts to delete it on
+     * destruction.
      */
     auto testFile(string file = __FILE__, size_t line = __LINE__)
     {
