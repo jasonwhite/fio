@@ -1,7 +1,7 @@
 /**
-  Copyright: Copyright Jason White, 2013-
-  License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
-  Authors:   Jason White
+ * Copyright: Copyright Jason White, 2013-
+ * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Authors:   Jason White
  */
 module io.stdio;
 
@@ -17,11 +17,11 @@ public import io.stream,
 alias File = TextStream!(BufferedStream!(LockingStream!FileStream));
 
 /**
-  Standard I/O streams.
-
-  NOTE: An exception will be thrown on destruction because std.stdio also closes
-  these file handles. This will not be a problem if std.stdio is replaced by
-  this module.
+ * Standard I/O streams.
+ *
+ * NOTE: An exception will be thrown on destruction because std.stdio also closes
+ * these file handles. This will not be a problem if std.stdio is replaced by
+ * this module.
  */
 __gshared
 {
@@ -40,15 +40,15 @@ shared static this()
     // Initialize stdio streams.
     version (Posix)
     {
-        stdin  = File(0, "stdin");
-        stdout = File(1, "stdout");
-        stderr = File(2, "stderr");
+        stdin  = File(0);
+        stdout = File(1);
+        stderr = File(2);
     }
 }
 
 /**
-  These functions are the same as the ones provided by $(D
-  io.text.TextStream), but they act on $(D stdin) and $(D stdout).
+ * These functions are the same as the ones provided by $(D io.text.TextStream),
+ * but they act on $(D stdin) and $(D stdout).
  */
 size_t readf(Char, T...)(in Char[] fmt, T args)
 {

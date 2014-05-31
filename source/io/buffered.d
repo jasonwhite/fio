@@ -1,13 +1,15 @@
 /**
-  Copyright: Copyright Jason White, 2013-
-  License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
-  Authors:   Jason White
-
-  Description:
-  A buffer wraps a stream to provide an efficient range interface. A buffer is a
-  sliding window over a stream.
+ * Copyright: Copyright Jason White, 2013-
+ * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Authors:   Jason White
+ *
+ * Description:
+ * A buffer wraps a stream to provide an efficient range interface. A buffer is a
+ * sliding window over a stream.
  */
 module io.buffered;
+
+version (none):
 
 struct Buffered(Stream)
 {
@@ -41,7 +43,7 @@ struct Buffered(Stream)
 
     this(Stream stream, ubyte[] buffer)
     {
-        this.stream = strema;
+        this.stream = stream;
         this.buffer = buffer;
         length = stream.read(buffer);
     }
@@ -73,8 +75,16 @@ struct Buffered(Stream)
         }
     }
 
+    const(ubyte)[] peek(ptrdiff_t n)
+    {
+    }
+
+    void ensure(ptrdiff_t n)
+    {
+    }
+
     /**
-      Seek to the specified position plus/minus the specified offset.
+     * Seek to the specified position plus/minus the specified offset.
      */
     Position seekTo(Position p, Offset offset = 0)
     {

@@ -1,5 +1,5 @@
 /**
- * Copyright: Copyright Jason White, 2013-
+ * Copyright: Copyright Jason White, 2014
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
@@ -21,6 +21,7 @@ version (Posix)
         SEEK_END
     }
 
+    // FIXME: This should be moved into a separate module.
     alias SysException = ErrnoException;
 }
 else version (Windows)
@@ -43,6 +44,7 @@ else version (Windows)
         );
     }
 
+    // FIXME: This should be moved into a separate module.
     class SysException : Exception
     {
         uint errCode;
@@ -60,6 +62,7 @@ else
     static assert(false, "Unsupported platform.");
 }
 
+// FIXME: This should be moved into a separate module.
 T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
     (T value, lazy string msg = null)
 {
@@ -554,169 +557,6 @@ struct File
 }
 
 /**
- * A memory mapped file.
- */
-struct MmFile
-{
-    private
-    {
-        version (Posix)
-        {
-            import core.sys.posix.sys.mman;
-        }
-        else version (Windows)
-        {
-            static assert(false, "Not implemented yet.");
-        }
-
-        // Memory mapped data.
-        void[] data;
-    }
-
-    alias data this;
-
-    alias Position = File.Position;
-    alias Offset   = File.Offset;
-
-    // Converts the Access enum to POSIX protection flags.
-    version (Posix)
-    static private int prot(Access access) pure nothrow
-    {
-        int prot = PROT_NONE;
-        if (access & Access.read)    prot |= PROT_READ;
-        if (access & Access.write)   prot |= PROT_WRITE;
-        if (access & Access.execute) prot |= PROT_EXEC;
-        return prot;
-    }
-
-    /**
-     * Maps the contents of the specified file into memory.
-     *
-     * Params:
-     *   file = Open file to be mapped. The file may be closed after being
-     *      mapped to memory.
-     *   access = Access flags of the memory region.
-     *   length = Length of the file. If 0, the length is taken to be the size
-     *      of the file minus the offset.
-     *   offset = Position within the file to start the mapping. This must be
-     *      a multiple of the page size (generally 4096).
-     *   share = If true, changes are visible to other processes. If false,
-     *      changes are not visible to other processes and are never written
-     *      back to the file. True by default.
-     *   address = The preferred memory address to map the file to. This is just
-     *      a hint, the system is may or may not use this address. If null, the
-     *      system chooses an appropriate address.
-     *
-     * Throws: SysException
-     */
-    this()(auto ref File file, size_t length = 0, Position offset = 0,
-            Access access = Access.readWrite, bool share = true,
-            void* address = null)
-    {
-        version (Posix)
-        {
-            if (length == 0)
-                length = file.length - offset;
-
-            int flags = share ? MAP_SHARED : MAP_PRIVATE;
-
-            void *p = mmap(
-                address,          // Preferred address
-                length,           // Length of the memory map
-                prot(access),     // Protection flags
-                flags,            // Mapping flags
-                file.handle,      // File descriptor
-                cast(off_t)offset // Offset within the file
-                );
-
-            sysEnforce(p != MAP_FAILED, "Failed to memory map file");
-
-            data = p[0 .. length];
-        }
-    }
-
-    /**
-     * An anonymous mapping. An anonymous mapping is not backed by any file. Its
-     * contents are initialized to 0. This is effectively equivalent to
-     * allocating memory.
-     */
-    /*this(Access access, size_t length, bool share = true, void* address = null)
-    {
-        version (Posix)
-        {
-            int flags = MAP_ANON | (share ? MAP_SHARED : MAP_PRIVATE);
-            void *p = mmap(address, length, prot(access), flags, -1, 0);
-            sysEnforce(p != MAP_FAILED, "Failed to memory map file");
-
-            data = p[0 .. length];
-        }
-    }*/
-
-    /**
-     * Unmaps the file from memory and writes back any changes to the file
-     * system.
-     */
-    ~this()
-    {
-        version (Posix)
-        {
-            int ret = munmap(data.ptr, data.length);
-            sysEnforce(ret == 0, "Failed to unmap memory");
-        }
-    }
-
-    /**
-     * TODO: Write a description.
-     */
-    /*void remap(size_t length, size_t offset = 0, bool share = true)
-    {
-        version (Posix)
-        {
-            int flags = (share ? MAP_SHARED : MAP_PRIVATE);
-            void *p = mremap(data.ptr, data.length, flags, -1, offset);
-            sysEnforce(ret == 0, "Failed to remap memory");
-        }
-    }*/
-
-    /**
-     * Write any pending changes to the file on the file system.
-     */
-    void sync()
-    {
-        version (Posix)
-        {
-            int ret = msync(data.ptr, data.length, MS_SYNC);
-            sysEnforce(ret == 0, "Failed to synchronize memory map");
-        }
-    }
-}
-
-unittest
-{
-    //auto tf = testFile();
-
-    {
-        // Generate some data to write to the file.
-        char[8192] data;
-        foreach (i, ref e; data)
-            e = 'a' + (i % 26);
-
-        file.write("testfile.txt", data);
-    }
-
-    {
-        auto mmfile = File("testfile.txt", FileFlags.updateExisting)
-            .MmFile(4, 4096);
-
-        auto text = cast(char[])mmfile;
-
-        immutable newdata = "TEST";
-
-        text[0 .. newdata.length] = newdata[];
-    }
-}
-
-/**
  * Specifies in what mode the file should be opened.
  */
 enum Mode
@@ -769,7 +609,7 @@ enum Access
     /// Allows only write operations on the file.
     write = 1 << 1,
 
-    /// Allows data to be executed. Only used when memory mapping a file.
+    /// Allows data to be executed. This is only used for memory mapped files.
     execute = 1 << 2,
 
     /// Allows both read and write operations on the file.

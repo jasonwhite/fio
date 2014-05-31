@@ -5,12 +5,10 @@ all: unittest
 
 DMD = dmd
 
-file.o: stream.o
 buffered.o: stream.o
 text.o: stream.o
 stdio.o: stream.o file.o buffered.o text.o
 array.o: stream.o
-locking.o: stream.o
 
 %.o: %.d
 	$(DMD) -unittest -I.. -cov -of$@ -c $^

@@ -1,5 +1,5 @@
 /**
- * Copyright: Copyright Jason White, 2013-
+ * Copyright: Copyright Jason White, 2014
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
@@ -14,9 +14,23 @@ version (Posix)
 }
 else version (Windows)
 {
-    static assert(false, "Not implemented yet.");
+    import std.c.windows.windows;
+}
+else
+{
+    static assert(false, "Not implemented on this platform.");
 }
 
+
+// Converts file access flags to POSIX protection flags.
+private @property int prot(Access access) pure nothrow
+{
+    int prot = PROT_NONE;
+    if (access & Access.read)    prot |= PROT_READ;
+    if (access & Access.write)   prot |= PROT_WRITE;
+    if (access & Access.execute) prot |= PROT_EXEC;
+    return prot;
+}
 
 /**
  * A memory mapped file.
@@ -24,34 +38,26 @@ else version (Windows)
 struct MmFile
 {
     // Memory mapped data.
-    private void[] data;
+    void[] data;
 
     alias data this;
 
     alias Position = File.Position;
-    alias Offset   = File.Offset;
 
     // Converts the Access enum to POSIX protection flags.
     version (Posix)
-    static private int prot(Access access) pure nothrow
-    {
-        int prot = PROT_NONE;
-        if (access & Access.read)    prot |= PROT_READ;
-        if (access & Access.write)   prot |= PROT_WRITE;
-        if (access & Access.execute) prot |= PROT_EXEC;
-        return prot;
-    }
 
     /**
      * Maps the contents of the specified file into memory.
      *
      * Params:
      *   file = Open file to be mapped. The file may be closed after being
-     *      mapped to memory.
+     *      mapped to memory. The file must not be a terminal or a pipe. It must
+     *      have random access capabilities.
      *   access = Access flags of the memory region.
      *   length = Length of the file. If 0, the length is taken to be the size
-     *      of the file minus the offset.
-     *   offset = Position within the file to start the mapping. This must be
+     *      of the file.
+     *   start = Position within the file to start the mapping. This must be
      *      a multiple of the page size (generally 4096).
      *   share = If true, changes are visible to other processes. If false,
      *      changes are not visible to other processes and are never written
@@ -62,29 +68,36 @@ struct MmFile
      *
      * Throws: SysException
      */
-    this()(auto ref File file, size_t length = 0, Position offset = 0,
+    this()(auto ref File file, size_t length = 0, Position start = 0,
             Access access = Access.readWrite, bool share = true,
             void* address = null)
     {
         version (Posix)
         {
             if (length == 0)
-                length = file.length - offset;
+                length = file.length;
 
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 
             void *p = mmap(
-                address,          // Preferred address
-                length,           // Length of the memory map
-                prot(access),     // Protection flags
-                flags,            // Mapping flags
-                file.handle,      // File descriptor
-                cast(off_t)offset // Offset within the file (must be page-aligned)
+                address,         // Preferred address
+                length,          // Length of the memory map
+                access.prot,     // Protection flags
+                flags,           // Mapping flags
+                file.handle,     // File descriptor
+                cast(off_t)start // Offset within the file (must be page-aligned)
                 );
 
             sysEnforce(p != MAP_FAILED, "Failed to map file to memory");
 
             data = p[0 .. length];
+        }
+        else version (Windows)
+        {
+            if (length == 0)
+                length = file.length - start;
+
+            auto fileMapping = CreateFileMappingA(file.handle, null, );
         }
     }
 
@@ -148,14 +161,33 @@ unittest
 {
     auto tf = testFile();
 
-    {
-        auto map = File(tf.name, FileFlags.writeEmpty)
-            .MmFile(128, 0);
+    char[128] data;
+    foreach (i, ref e; data)
+        e = 'a' + (i % 26);
 
+    immutable newData = "The quick brown fox jumps over the lazy dog.";
+
+    // Modify file using memory map
+    {
+        auto file = File(tf.name, FileFlags.updateEmpty);
+        file.write(data);
+
+        auto map = file.MmFile();
         auto text = cast(char[])map;
 
-        immutable newdata = "The quick brown fox jumps over the lazy dog.";
+        text[0 .. newData.length] = newData[];
+    }
 
-        text[0 .. newdata.length] = newdata[];
+    // Modify the data in the same way.
+    data[0 .. newData.length] = newData[];
+
+    // Read data back and compare for equality
+    {
+        auto file = File(tf.name, FileFlags.readExisting);
+
+        char[128] buf;
+        file.read(buf);
+
+        assert(data == buf);
     }
 }

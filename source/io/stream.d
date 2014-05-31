@@ -1,19 +1,21 @@
 /**
-  Copyright: Copyright Jason White, 2013-
-  License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
-  Authors:   Jason White
+ * Copyright: Copyright Jason White, 2013-
+ * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Authors:   Jason White
  */
 module io.stream;
 
+version (none):
+
 /**
-  Checks if a type is a source. A source is a stream that can be read from and
-  must define the member function $(D readData).
+ * Checks if a type is a source. A source is a stream that can be read from and
+ * must define the member function $(D readData).
  */
 enum isSource(S) =
     is(typeof({
         S s = void;
         ubyte[] buf;
-        ubyte[] d = s.readData(buf);
+        size_t d = s.readData(buf);
     }));
 
 unittest
@@ -38,8 +40,8 @@ unittest
 }
 
 /**
-  Checks if a type is a sink. A sink is a stream that can be written to and must
-  define the member function $(D writeData).
+ * Checks if a type is a sink. A sink is a stream that can be written to and must
+ * define the member function $(D writeData).
  */
 enum isSink(S) =
     is(typeof({
@@ -69,7 +71,7 @@ unittest
 }
 
 /**
-  Checks if a type is seekable.
+ * Checks if a type is seekable.
  */
 enum isSeekable(S) =
     is(typeof({
@@ -97,7 +99,7 @@ unittest
 }
 
 /**
-  Stream exceptions.
+ * Stream exceptions.
  */
 class StreamException : Exception       { this(string msg) { super(msg); } }
 
@@ -111,31 +113,31 @@ class WriteException  : StreamException { this(string msg) { super(msg); } }
 class SeekException   : StreamException { this(string msg) { super(msg); } }
 
 /**
-  A stream implementation of /dev/null.
-
-  A stream that does nearly nothing. Reads return zero's and writes get sucked
-  into a black hole.
-
-  This stream serves two purposes: to act as a reference and to be used in unit
-  tests.
+ * A stream implementation of /dev/null.
+ *
+ * A stream that does nearly nothing. Reads return zero's and writes get sucked
+ * into a black hole.
+ *
+ * This stream serves two purposes: to act as a reference and to be used in unit
+ * tests.
  */
 struct NullStream
 {
     @disable this(this);
 
     /**
-      Fills the buffer with zeros.
+     * Fills the buffer with zeros.
      */
-    ubyte[] readData(ubyte[] buf)
+    size_t readData(ubyte[] buf)
     {
         foreach (ref e; buf)
             e = e.init;
 
-        return buf;
+        return buf.length;
     }
 
     /**
-      Simply returns the length of the data array.
+     * Simply returns the length of the data array.
      */
     size_t writeData(in ubyte[] data)
     {
@@ -160,8 +162,8 @@ unittest
 }
 
 /**
-  Returns a range that iterates over a stream a chunk of bytes at a time.
-  Buffering will be taken advantage of if it is available in the stream.
+ * Returns a range that iterates over a stream a chunk of bytes at a time.
+ * Buffering will be taken advantage of if it is available in the stream.
  */
 version (none)
 auto byChunk(Source stream, size_t size)
@@ -198,8 +200,8 @@ auto byChunk(Source stream, size_t size)
         }
 
         /**
-          Returns the current chunk. The returned slice is only valid until the
-          next call to $(D popFront).
+         * Returns the current chunk. The returned slice is only valid until the
+         * next call to $(D popFront).
          */
         ubyte[] front()
         {
@@ -208,7 +210,7 @@ auto byChunk(Source stream, size_t size)
         }
 
         /**
-          Advances to the next chunk.
+         * Advances to the next chunk.
          */
         void popFront()
         {
@@ -220,7 +222,7 @@ auto byChunk(Source stream, size_t size)
 }
 
 /**
-  Returns a range that iterates over a type T in a stream.
+ * Returns a range that iterates over a type T in a stream.
  */
 version (none)
 @property auto byRecord(T, Stream)(Stream s)
@@ -234,8 +236,8 @@ version (none)
 }
 
 /**
-  Copy the entirety of $(D source) to $(D sink). If $(D sink) could not take
-  everything from $(D source), an exception is thrown.
+ * Copy the entirety of $(D source) to $(D sink). If $(D sink) could not take
+ * everything from $(D source), an exception is thrown.
  */
 size_t copy(Source, Sink)(Source source, Sink sink, ubyte[] buf)
     if (isSource!Source && isSink!Sink)
@@ -262,9 +264,9 @@ size_t copy(Source, Sink)(Source source, Sink sink)
 }
 
 /**
-  Copies the first n bytes of the stream $(D source) to the stream $(D sink).
-  If the sink stream could not take everything from the source stream, an
-  exception is thrown.
+ * Copies the first n bytes of the stream $(D source) to the stream $(D sink).
+ * If the sink stream could not take everything from the source stream, an
+ * exception is thrown.
  */
 void copy(Source, Sink)(Source source, Sink sink, size_t n, ubyte[] buf)
     if (isSource!Source && isSink!Sink)

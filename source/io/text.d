@@ -1,16 +1,18 @@
 /**
-  Copyright: Copyright Jason White, 2013-
-  License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
-  Authors:   Jason White
+ * Copyright: Copyright Jason White, 2013-
+ * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Authors:   Jason White
  */
 module io.text;
+
+version (none):
 
 import io.stream;
 
 
 /**
-  Wraps a stream such that reads and writes are deferred for as long as
-  possible.
+ * Wraps a stream such that reads and writes are deferred for as long as
+ * possible.
  */
 struct TextStream(S)
     if (isSource!S || isSink!S)
