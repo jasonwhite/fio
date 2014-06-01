@@ -3,7 +3,6 @@
 	"description": "IO streams",
 	"copyright": "Copyright © 2014, Jason White",
 	"authors": ["Jason White"],
-    "targetType": "library",
 	"dependencies": {
 	}
 }
