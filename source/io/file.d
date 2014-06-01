@@ -90,7 +90,18 @@ struct File
     private Handle _h = InvalidHandle;
 
     /**
+     * Default construction is disabled.
+     *
+     * (This may turn out to be a mistake. There may be legitimate use cases for
+     * having an unopened file object.)
+     */
+    @disable this();
+
+    /**
      * When a $(D File) is copied, the internal file handle is duplicated.
+     *
+     * If internal handle duplications are not desired, this type can be wrapped
+     * with $(D RefCounted).
      */
     this(this)
     {
@@ -101,7 +112,20 @@ struct File
         }
         else version (Windows)
         {
-            static assert(0, "Not implemented yet.");
+            if (_h != InvalidHandle)
+            {
+                auto proc = GetCurrentProcess();
+                auto ret = DuplicateHandle(
+                    proc, // Process with the file handle
+                    _h,   // Handle to duplicate
+                    proc, // Process for the duplicated handle
+                    &_h,  // The duplicated handle
+                    0,    // Access flags, ignored
+                    true, // Allow this handle to be inherited
+                    DUPLICATE_SAME_ACCESS
+                    );
+                sysEnforce(ret, "Failed to duplicate handle");
+            }
         }
     }
 
@@ -109,24 +133,39 @@ struct File
     {
         auto tf = testFile();
 
-        File a;
+        auto a = File(tf.name, FileFlags.writeEmpty);
 
         {
-            auto b = File(tf.name, FileFlags.writeAlways);
-            a = b; // Copy
+            File b = a; // Copy
             b.write("abcd");
         }
 
         assert(a.position == 4);
     }
 
+    unittest
+    {
+        // File is copied when passed to the function.
+        static void foo(File f)
+        {
+            f.write("abcd");
+        }
+
+        auto tf = testFile();
+        auto f = File(tf.name, FileFlags.writeEmpty);
+
+        assert(f.position == 0);
+
+        foo(f);
+
+        assert(f.position == 4);
+    }
+
     /**
       Opens a file by name. By default, an existing file is opened in read mode.
      */
-    void open(string name, FileFlags flags = FileFlags.readExisting)
+    this(string name, FileFlags flags = FileFlags.readExisting)
     {
-        close();
-
         version (Posix)
         {
             import std.string : toStringz;
@@ -154,12 +193,6 @@ struct File
         sysEnforce(_h != InvalidHandle, "Could not open file '"~ name ~"'");
     }
 
-    /// Ditto
-    this(string name, FileFlags flags = FileFlags.readExisting)
-    {
-        open(name, flags);
-    }
-
     /**
      * Takes control of a file handle.
      *
@@ -182,15 +215,9 @@ struct File
      *       descriptor ($(D int)). For Windows, this is an object handle ($(D
      *       HANDLE)).
      */
-    void open(typeof(_h) h)
-    {
-        _h = h;
-    }
-
-    /// Ditto
     this(typeof(_h) h)
     {
-        open(h);
+        _h = h;
     }
 
     unittest
@@ -222,12 +249,15 @@ struct File
     }
 
     /**
-     * Closes the file stream. Typically, it is better to let the destructor take
-     * care of closing the file.
+     * Closes the file stream.
      */
-    void close()
+    ~this()
     {
-        if (_h == InvalidHandle) return; // Not open
+        if (_h == InvalidHandle)
+        {
+            // Never opened. This happens with default construction.
+            return;
+        }
 
         version (Posix)
         {
@@ -237,14 +267,6 @@ struct File
         {
             sysEnforce(CloseHandle(_h), "Failed to close file");
         }
-
-        _h = InvalidHandle;
-    }
-
-    /// Ditto
-    ~this()
-    {
-        close();
     }
 
     /**
@@ -255,13 +277,14 @@ struct File
         return _h != InvalidHandle;
     }
 
-    unittest
+    version (none) unittest
     {
         auto tf = testFile();
 
         File f;
         assert(!f.isOpen);
-        f.open(tf.name, FileFlags.writeAlways);
+
+        f = File(tf.name, FileFlags.writeAlways);
         assert(f.isOpen);
     }
 
@@ -273,7 +296,8 @@ struct File
 
     /**
      * Creates a unidirectional pipe that can be written to on one end and read
-     * from on the other.
+     * from on the other. A bidirectional pipe can be created with two
+     * unidirectional pipes.
      */
     static Pipe pipe()
     {
@@ -296,11 +320,53 @@ struct File
     {
         auto p = pipe();
 
-        immutable message = "Indubitably";
+        // Write to one end of the pipe...
+        immutable message = "Indubitably.";
         p.writeEnd.write(message);
 
+        // ...and read from it on the other.
         char[message.length] buf;
         assert(buf[0 .. p.readEnd.read(buf)] == message);
+    }
+
+    /**
+     * Creates a temporary file. The file is automatically deleted when it is no
+     * longer referenced. The temporary file is opened with both read and write
+     * privileges.
+     */
+    static File temp()
+    {
+        version (Posix)
+        {
+            import core.sys.posix.stdlib : mkstemp;
+
+            // We should be able to rely on /tmp existing. /tmp is usually a
+            // virtual file system that is backed by RAM and should be very
+            // fast to access.
+            auto name = "/tmp/XXXXXX\0".dup;
+
+            int fd = mkstemp(name.ptr);
+            sysEnforce(fd != InvalidHandle, "Failed to create a temporary file");
+
+            // Unlink the file to ensure it is deleted automatically when the
+            // file descriptor is closed.
+            sysEnforce(unlink(name.ptr) == 0, "Failed to unlink temporary file");
+
+            return File(fd);
+        }
+        else version (Windows)
+        {
+            // TODO: Use FILE_FLAG_DELETE_ON_CLOSE and FILE_SHARE_DELETE with
+            // CreateFile.
+        }
+    }
+
+    unittest
+    {
+        auto f = File.temp();
+        assert(f.position == 0);
+        assert(f.write("Hello") == 5);
+        assert(f.position == 5);
     }
 
     /**
@@ -393,39 +459,6 @@ struct File
         start = 0,
           end = Position.max;
 
-    /**
-     * Gets/sets the current position in the file.
-     */
-    @property Position position()
-    {
-        return skip(0);
-    }
-
-    /// Ditto
-    @property void position(Position p)
-    {
-        seekTo(p);
-    }
-
-    /**
-     * Seeks relative to the current position
-     */
-    Position skip(Offset offset)
-    {
-        return seek(From.here, offset);
-    }
-
-    /**
-     * Seeks relative to a position.
-     */
-    Position seekTo(Position p, Offset offset = 0)
-    {
-        if (p == end)
-            return seek(From.end, offset);
-        else
-            return seek(From.start, offset + p);
-    }
-
     private enum From
     {
         start,
@@ -474,7 +507,7 @@ struct File
     {
         auto tf = testFile();
 
-        auto f = File(tf.name, FileFlags.updateAlways);
+        auto f = File(tf.name, FileFlags.readWriteAlways);
 
         immutable data = "abcdefghijklmnopqrstuvwxyz";
         assert(f.write(data) == data.length);
@@ -486,6 +519,43 @@ struct File
         // Test large offset
         Position p = cast(Offset)int.max * 2;
         assert(f.seekTo(f.start, p) == p);
+    }
+
+    /**
+     * Seeks relative to the current position
+     */
+    Position skip(Offset offset)
+    {
+        return seek(From.here, offset);
+    }
+
+    /**
+     * Seeks relative to a position.
+     *
+     * Params:
+     *   pos: Absolute position in the file. $(D File.start) and $(D File.end)
+     *        can be used as canonical markers in the file.
+     */
+    Position seekTo(Position pos, Offset offset = 0)
+    {
+        if (pos == end)
+            return seek(From.end, offset);
+        else
+            return seek(From.start, offset + pos);
+    }
+
+    /**
+     * Gets/sets the current position in the file.
+     */
+    @property Position position()
+    {
+        return skip(0);
+    }
+
+    /// Ditto
+    @property void position(Position p)
+    {
+        seekTo(p);
     }
 
     /**
@@ -525,6 +595,54 @@ struct File
         assert(f.length == data.length);
 
         assert(f.position == m);
+    }
+
+    /**
+     * Sets the length of the file. This can be used to truncate or extend the
+     * length of the file. If the file is extended, the new segment is not
+     * guaranteed to be initialized to zeros.
+     */
+    @property void length(Position len)
+    in { assert(isOpen); }
+    body
+    {
+        version (Posix)
+        {
+            sysEnforce(
+                ftruncate(_h, cast(off_t)len) == 0,
+                "Failed to set the length of the file"
+                );
+        }
+        else version (Windows)
+        {
+            // FIXME: This should be atomic.
+            // Seek to the position
+            auto pos = seekTo(len);
+            scope (exit) seekTo(pos);
+
+            sysEnforce(
+                SetEndOfFile(_h),
+                "Failed to set the length of the file"
+                );
+        }
+    }
+
+    unittest
+    {
+        auto tf = testFile();
+        auto f = File(tf.name, FileFlags.writeEmpty);
+        assert(f.length == 0);
+        assert(f.position == File.start);
+
+        // Extend
+        f.length = 100;
+        assert(f.length == 100);
+        assert(f.position == File.start);
+
+        // Truncate
+        f.length = 0;
+        assert(f.length == 0);
+        assert(f.position == File.start);
     }
 
     /**
@@ -681,23 +799,23 @@ struct FileFlags
         /**
          * An existing file is opened with read/write access.
          */
-        FileFlags updateExisting = readExisting | writeExisting;
+        FileFlags readWriteExisting = readExisting | writeExisting;
 
         /**
          * A new file is created with read/write access.
          */
-        FileFlags updateNew = FileFlags(Mode.create, Access.readWrite);
+        FileFlags readWriteNew = FileFlags(Mode.create, Access.readWrite);
 
         /**
          * A new file is either opened or created with read/write access.
          */
-        FileFlags updateAlways = readExisting | writeNew;
+        FileFlags readWriteAlways = readExisting | writeNew;
 
         /**
          * A new file is either opened or created, truncated if necessary, with
          * read/write access. This ensures that an $(I empty) file is opened.
          */
-        FileFlags updateEmpty = writeEmpty | Access.readWrite;
+        FileFlags readWriteEmpty = writeEmpty | Access.readWrite;
     }
 
     /**
@@ -846,9 +964,9 @@ struct FileFlags
         assert(FileFlags("w") == FileFlags.writeEmpty);
         assert(FileFlags("a") == (FileFlags.writeNew | Mode.append));
 
-        assert(FileFlags("r+") == FileFlags.updateExisting);
-        assert(FileFlags("w+") == FileFlags.updateEmpty);
-        assert(FileFlags("a+") == (FileFlags.updateNew | Mode.append));
+        assert(FileFlags("r+") == FileFlags.readWriteExisting);
+        assert(FileFlags("w+") == FileFlags.readWriteEmpty);
+        assert(FileFlags("a+") == (FileFlags.readWriteNew | Mode.append));
 
         // Equivalent modes
         assert(FileFlags("w+") == FileFlags("wb+"));

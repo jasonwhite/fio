@@ -33,19 +33,22 @@ private @property int prot(Access access) pure nothrow
 }
 
 /**
- * A memory mapped file.
+ * A memory mapped file. This essentially allows a file to be used as if it were
+ * a slice of memory. For many use cases, it is a very efficient means of
+ * accessing a file.
  */
 struct MmFile
 {
     // Memory mapped data.
     void[] data;
 
+    version (Windows)
+    private HANDLE fileMap = null;
+
     alias data this;
 
     alias Position = File.Position;
 
-    // Converts the Access enum to POSIX protection flags.
-    version (Posix)
 
     /**
      * Maps the contents of the specified file into memory.
@@ -68,9 +71,8 @@ struct MmFile
      *
      * Throws: SysException
      */
-    this()(auto ref File file, size_t length = 0, Position start = 0,
-            Access access = Access.readWrite, bool share = true,
-            void* address = null)
+    this()(auto ref File file, Access access = Access.read, size_t length = 0,
+            Position start = 0, bool share = true, void* address = null)
     {
         version (Posix)
         {
@@ -94,10 +96,7 @@ struct MmFile
         }
         else version (Windows)
         {
-            if (length == 0)
-                length = file.length - start;
-
-            auto fileMapping = CreateFileMappingA(file.handle, null, );
+            //auto fileMapping = CreateFileMappingA(file.handle, null, );
         }
     }
 
@@ -126,8 +125,17 @@ struct MmFile
     {
         version (Posix)
         {
-            int ret = munmap(data.ptr, data.length);
-            sysEnforce(ret == 0, "Failed to unmap memory");
+            sysEnforce(
+                munmap(data.ptr, data.length) == 0,
+                "Failed to unmap memory"
+                );
+        }
+        else version (Windows)
+        {
+            sysEnforce(
+                UnmapViewOfFile(data.ptr) != 0,
+                "Failed to unmap memory"
+                );
         }
     }
 
@@ -145,14 +153,45 @@ struct MmFile
     }*/
 
     /**
-     * Write any pending changes to the file on the file system.
+     * Synchronously writes any pending changes to the file on the file system.
      */
-    void sync()
+    void flush()
     {
         version (Posix)
         {
-            int ret = msync(data.ptr, data.length, MS_SYNC);
-            sysEnforce(ret == 0, "Failed to synchronize memory map");
+            sysEnforce(
+                msync(data.ptr, data.length, MS_SYNC) == 0,
+                "Failed to flush memory map"
+                );
+        }
+        else version (Windows)
+        {
+            // TODO: Make this synchronous
+            sysEnforce(
+                FlushViewOfFile(data.ptr, data.length) != 0,
+                "Failed to flush memory map"
+                );
+        }
+    }
+
+    /**
+     * Asynchronously writes any pending changes to the file on the file system.
+     */
+    void flushAsync()
+    {
+        version (Posix)
+        {
+            sysEnforce(
+                msync(data.ptr, data.length, MS_ASYNC) == 0,
+                "Failed to flush memory map"
+                );
+        }
+        else version (Windows)
+        {
+            sysEnforce(
+                FlushViewOfFile(data.ptr, data.length) != 0,
+                "Failed to flush memory map"
+                );
         }
     }
 }
@@ -161,33 +200,25 @@ unittest
 {
     auto tf = testFile();
 
-    char[128] data;
-    foreach (i, ref e; data)
-        e = 'a' + (i % 26);
-
     immutable newData = "The quick brown fox jumps over the lazy dog.";
 
-    // Modify file using memory map
+    // Modify the file
     {
-        auto file = File(tf.name, FileFlags.updateEmpty);
-        file.write(data);
+        auto f = File(tf.name, FileFlags.readWriteEmpty);
+        f.length = newData.length;
 
-        auto map = file.MmFile();
-        auto text = cast(char[])map;
+        auto map = f.MmFile(Access.readWrite);
+        auto data = cast(char[])map;
 
-        text[0 .. newData.length] = newData[];
+        data[0 .. newData.length] = newData[];
+
+        assert(data[0 .. newData.length] == newData[]);
     }
 
-    // Modify the data in the same way.
-    data[0 .. newData.length] = newData[];
-
-    // Read data back and compare for equality
+    // Read the file back in
     {
-        auto file = File(tf.name, FileFlags.readExisting);
-
-        char[128] buf;
-        file.read(buf);
-
-        assert(data == buf);
+        auto map = File(tf.name, FileFlags.readExisting).MmFile();
+        auto data = cast(char[])map;
+        assert(data[0 .. newData.length] == newData[]);
     }
 }
