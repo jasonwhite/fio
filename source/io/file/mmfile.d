@@ -5,8 +5,7 @@
  */
 module io.mmfile;
 
-import io.file;
-
+import io.file.file;
 
 version (Posix)
 {
@@ -20,7 +19,6 @@ else
 {
     static assert(false, "Not implemented on this platform.");
 }
-
 
 // Converts file access flags to POSIX protection flags.
 private @property int prot(Access access) pure nothrow
@@ -43,12 +41,9 @@ struct MmFile
     void[] data;
 
     version (Windows)
-    private HANDLE fileMap = null;
+        private HANDLE fileMap = null;
 
     alias data this;
-
-    alias Position = File.Position;
-
 
     /**
      * Maps the contents of the specified file into memory.
@@ -72,7 +67,7 @@ struct MmFile
      * Throws: SysException
      */
     this()(auto ref File file, Access access = Access.read, size_t length = 0,
-            Position start = 0, bool share = true, void* address = null)
+        File.Position start = 0, bool share = true, void* address = null)
     {
         version (Posix)
         {
@@ -96,6 +91,7 @@ struct MmFile
         }
         else version (Windows)
         {
+            // TODO
             //auto fileMapping = CreateFileMappingA(file.handle, null, );
         }
     }
@@ -196,6 +192,7 @@ struct MmFile
     }
 }
 
+///
 unittest
 {
     auto tf = testFile();

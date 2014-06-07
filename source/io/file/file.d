@@ -3,7 +3,9 @@
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
-module io.file;
+module io.file.file;
+
+public import io.file.flags;
 
 version (unittest)
     import file = std.file; // For easy file creation/deletion.
@@ -71,7 +73,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 }
 
 /**
- * A light, cross-platform wrapper around low-level file operations.
+ * A light-weight, cross-platform wrapper around low-level file operations.
  */
 struct File
 {
@@ -90,29 +92,21 @@ struct File
     private Handle _h = InvalidHandle;
 
     /**
-     * Default construction is disabled.
-     *
-     * (This may turn out to be a mistake. There may be legitimate use cases for
-     * having an unopened file object.)
-     */
-    @disable this();
-
-    /**
      * When a $(D File) is copied, the internal file handle is duplicated.
      *
-     * If internal handle duplications are not desired, this type can be wrapped
-     * with $(D RefCounted).
+     * If reference counting is desired instead, wrap $(D File) with $(D
+     * RefCounted).
      */
     this(this)
     {
         version (Posix)
         {
-            if (_h != InvalidHandle)
+            if (isOpen)
                 _h = .dup(_h);
         }
         else version (Windows)
         {
-            if (_h != InvalidHandle)
+            if (isOpen)
             {
                 auto proc = GetCurrentProcess();
                 auto ret = DuplicateHandle(
@@ -162,7 +156,20 @@ struct File
     }
 
     /**
-      Opens a file by name. By default, an existing file is opened in read mode.
+     * Opens or creates a file by name. By default, an existing file is opened
+     * in read-only mode.
+     *
+     * Params:
+     *     name = The name of the file.
+     *     flags = How to open the file.
+     *
+     * Example:
+     * ---
+     * // Create a brand-new file and write to it. Throws an exception if the
+     * // file already exists.
+     * auto f = File("filename", FileFlags.writeNew);
+     * f.write("Hello world!");
+     * ---
      */
     this(string name, FileFlags flags = FileFlags.readExisting)
     {
@@ -185,12 +192,12 @@ struct File
                     null,                  // Security attributes
                     mode,                  // Creation disposition
                     FILE_ATTRIBUTE_NORMAL, // Flags and attributes
-                    null,                  // Template file
+                    null,                  // Template file handle
                     );
             }
         }
 
-        sysEnforce(_h != InvalidHandle, "Could not open file '"~ name ~"'");
+        sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name ~"'");
     }
 
     /**
@@ -215,7 +222,7 @@ struct File
      *       descriptor ($(D int)). For Windows, this is an object handle ($(D
      *       HANDLE)).
      */
-    this(typeof(_h) h)
+    this(Handle h)
     {
         _h = h;
     }
@@ -288,79 +295,86 @@ struct File
         assert(f.isOpen);
     }
 
-    struct Pipe
-    {
-        File readEnd;  // Read end
-        File writeEnd; // Write end
-    }
-
-    /**
-     * Creates a unidirectional pipe that can be written to on one end and read
-     * from on the other. A bidirectional pipe can be created with two
-     * unidirectional pipes.
-     */
-    static Pipe pipe()
-    {
-        version (Posix)
-        {
-            int fd[2];
-            sysEnforce(.pipe(fd) != -1);
-            return Pipe(File(fd[0]), File(fd[1]));
-        }
-        else version(Windows)
-        {
-            Handle readEnd, writeEnd;
-            sysEnforce(CreatePipe(&readEnd, &writeEnd, null, 0));
-            return Pipe(File(readEnd), File(writeEnd));
-        }
-    }
-
-    ///
-    unittest
-    {
-        auto p = pipe();
-
-        // Write to one end of the pipe...
-        immutable message = "Indubitably.";
-        p.writeEnd.write(message);
-
-        // ...and read from it on the other.
-        char[message.length] buf;
-        assert(buf[0 .. p.readEnd.read(buf)] == message);
-    }
-
     /**
      * Creates a temporary file. The file is automatically deleted when it is no
-     * longer referenced. The temporary file is opened with both read and write
-     * privileges.
+     * longer referenced. The temporary file is always opened with both read and
+     * write access.
      */
     static File temp()
     {
         version (Posix)
         {
+            /* Implementation note: Since Linux 3.11, there is the flag
+             * O_TMPFILE which can be used to open a temporary file. This
+             * creates an unnamed inode in the specified directory. Because the
+             * inode is unnamed, it will be automatically deleted once the file
+             * descriptor is closed. In the future, perhaps 2016, once Linux
+             * 3.11 is not so new, this flag should be used instead.
+             */
+
             import core.sys.posix.stdlib : mkstemp;
 
-            // We should be able to rely on /tmp existing. /tmp is usually a
-            // virtual file system that is backed by RAM and should be very
-            // fast to access.
+            // We should be able to rely on /tmp existing. /tmp is usually
+            // mounted as a virtual file system that is backed by RAM and should
+            // be very fast to access.
             auto name = "/tmp/XXXXXX\0".dup;
 
             int fd = mkstemp(name.ptr);
             sysEnforce(fd != InvalidHandle, "Failed to create a temporary file");
 
-            // Unlink the file to ensure it is deleted automatically when the
-            // file descriptor is closed.
+            // Unlink the file to ensure it is deleted automatically when all
+            // file descriptors referring to it are closed.
             sysEnforce(unlink(name.ptr) == 0, "Failed to unlink temporary file");
 
             return File(fd);
         }
         else version (Windows)
         {
-            // TODO: Use FILE_FLAG_DELETE_ON_CLOSE and FILE_SHARE_DELETE with
-            // CreateFile.
+            wchar[MAX_PATH-14] dir;
+            sysEnforce(
+                GetTempPathW(dir.length, dir.ptr),
+                "Failed to get temporary file directory"
+                );
+
+            wchar[MAX_PATH] path;
+            sysEnforce(
+                GetTempFileNameW(dir.ptr, "tmp", 0, path.ptr),
+                "Failed to generate temporary file path"
+                );
+
+            auto h = .CreateFileW(
+                // Temporary file name
+                path.ptr,
+
+                // Desired access
+                GENERIC_READ | GENERIC_WRITE,
+
+                // Share mode
+                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+
+                // Security attributes
+                null,
+
+                // Creation disposition
+                CREATE_NEW,
+
+                // Flags and attributes
+                FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY |
+                FILE_FLAG_DELETE_ON_CLOSE,
+
+                // Template file
+                null,
+            );
+
+            sysEnforce(
+                h != InvalidHandle,
+                "Failed to create temporary file '"~ name ~"'"
+                );
+            return File(h);
         }
     }
 
+    ///
     unittest
     {
         auto f = File.temp();
@@ -381,6 +395,12 @@ struct File
 
     /**
      * Read data from the file.
+     *
+     * Params:
+     *   buf = The buffer to read the data into. The length of the buffer
+     *         specifies how much data should be read.
+     *
+     * Returns: The number of bytes that were read.
      */
     size_t read(void[] buf)
     in { assert(isOpen); }
@@ -388,7 +408,7 @@ struct File
     {
         version (Posix)
         {
-            auto n = .read(_h, buf.ptr, buf.length);
+            immutable n = .read(_h, buf.ptr, buf.length);
             sysEnforce(n != -1);
             return n;
         }
@@ -416,6 +436,12 @@ struct File
     /**
      * Write data to the file. Returns the number of bytes written (not the
      * number of $(D T)s written).
+     *
+     * Params:
+     *   data = The data to write to the file. The length of the slice indicates
+     *          how much data should be written.
+     *
+     * Returns: The number of bytes that were written.
      */
     size_t write(in void[] data)
     in { assert(isOpen); }
@@ -423,7 +449,7 @@ struct File
     {
         version (Posix)
         {
-            auto n = .write(_h, data.ptr, data.length);
+            immutable n = .write(_h, data.ptr, data.length);
             sysEnforce(n != -1);
             return cast(size_t)n;
         }
@@ -442,10 +468,11 @@ struct File
         auto tf = testFile();
 
         immutable data = "\r\n\n\r\n";
+        char[data.length] buf;
 
-        File(tf.name, FileFlags.writeEmpty).write(data);
-
-        assert(file.read(tf.name) == data);
+        assert(File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
+        assert(File(tf.name, FileFlags.readExisting).read(buf));
+        assert(buf == data);
     }
 
     /// An absolute position in the file.
@@ -533,8 +560,9 @@ struct File
      * Seeks relative to a position.
      *
      * Params:
-     *   pos: Absolute position in the file. $(D File.start) and $(D File.end)
-     *        can be used as canonical markers in the file.
+     *   pos    = Absolute position in the file. $(D File.start) and $(D File.end)
+     *            can be used as canonical markers in the file.
+     *   offset = Optional offset from the absolute position.
      */
     Position seekTo(Position pos, Offset offset = 0)
     {
@@ -649,6 +677,8 @@ struct File
      * Checks if the file is a terminal.
      */
     @property bool isTerminal()
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -661,407 +691,152 @@ struct File
         }
     }
 
-    /*void lock()
+    enum LockType
     {
-        version (Linux)
-            sysEnforce(.flock(_h, LOCK_SH) == 0, "Failed to lock file.");
+        /**
+         * Shared access to the locked file. Other processes can also access the
+         * file.
+         */
+        read,
+
+        /**
+         * Exclusive access to the locked file. No other processes may access
+         * the file.
+         */
+        readWrite,
     }
 
-    void unlock()
+    version (Posix)
     {
-        version (Linux)
-            sysEnforce(.flock(_h, LOCK_UN) == 0, "Failed to unlock file.");
-    }*/
-}
-
-/**
- * Specifies in what mode the file should be opened.
- */
-enum Mode
-{
-    /// Default mode. Not very useful.
-    none = 0,
-
-    /**
-      Opens an existing file. Unless combined with create, fails if the file
-      does not exist.
-     */
-    open = 1 << 0,
-
-    /**
-     * Creates a new file. Fails if the file is opened without write access.
-     * Fails if the file already exists and not combined with truncate or open.
-     */
-    create = 1 << 1,
-
-    /**
-     * Opens the file if it already exists or creates it if it does not.
-     */
-    openOrCreate = open | create,
-
-    /**
-     * Allows only appending to the end of the file. Seek operations only affect
-     * subsequent reads. Upon writing, the file pointer gets set to the end of
-     * the file.
-     */
-    append = 1 << 2,
-
-    /**
-     * Truncates the file. This has no effect if the file has been created anew.
-     * Fails if the file is opened without write access.
-     */
-    truncate = 1 << 3,
-}
-
-/**
- * Specifies how to access the file.
- */
-enum Access
-{
-    /// Default access. Not very useful.
-    none = 0,
-
-    /// Allows only read operations on the file.
-    read = 1 << 0,
-
-    /// Allows only write operations on the file.
-    write = 1 << 1,
-
-    /// Allows data to be executed. This is only used for memory mapped files.
-    execute = 1 << 2,
-
-    /// Allows both read and write operations on the file.
-    readWrite = read | write,
-}
-
-/**
- * Specifies what other processes are allowed to do to the file.
- *
- * TODO: Keep this? It's currently only used by Windows.
- */
-enum Share
-{
-    /// Forbids sharing of the file.
-    none = 0,
-
-    /// Allows others to read from the file.
-    read = 1 << 0,
-
-    /// Allows others to write to the file.
-    write = 1 << 1,
-
-    /// Allows others to either read or write to the file.
-    readWrite = read | write,
-
-    /// Allows the file to deleted.
-    remove = 1 << 2,
-}
-
-/**
- * File flags determine how a file stream is created and used.
- */
-struct FileFlags
-{
-    Mode mode;
-    Access access;
-    Share share;
-
-    /// Typical file flag configurations:
-    static immutable
-    {
-        /**
-         * An existing file is opened with read access. This is the most
-         * commonly used configuration.
-         */
-        FileFlags readExisting = FileFlags(Mode.open, Access.read);
-
-        /**
-         * An existing file is opened with write access.
-         */
-        FileFlags writeExisting = FileFlags(Mode.open, Access.write);
-
-        /**
-         * A new file is created with write access.
-         */
-        FileFlags writeNew = FileFlags(Mode.create, Access.write);
-
-        /**
-         * A new file is either opened or created with write access.
-         */
-        FileFlags writeAlways = FileFlags(Mode.openOrCreate, Access.write);
-
-        /**
-         * A new file is either opened or created, truncated if necessary, with
-         * write access. This ensures that an $(I empty) file is opened.
-         */
-        FileFlags writeEmpty = FileFlags(Mode.openOrCreate | Mode.truncate, Access.write);
-
-        /**
-         * An existing file is opened with read/write access.
-         */
-        FileFlags readWriteExisting = readExisting | writeExisting;
-
-        /**
-         * A new file is created with read/write access.
-         */
-        FileFlags readWriteNew = FileFlags(Mode.create, Access.readWrite);
-
-        /**
-         * A new file is either opened or created with read/write access.
-         */
-        FileFlags readWriteAlways = readExisting | writeNew;
-
-        /**
-         * A new file is either opened or created, truncated if necessary, with
-         * read/write access. This ensures that an $(I empty) file is opened.
-         */
-        FileFlags readWriteEmpty = writeEmpty | Access.readWrite;
-    }
-
-    /**
-     * Explicitly set the file mode.
-     */
-    this(Mode mode = Mode.init,
-         Access access = Access.init,
-         Share share = Share.init) pure nothrow
-    {
-        this.mode = mode;
-        this.access = access;
-        this.share = share;
-    }
-
-    /**
-     * Construct the file flags from a mode string.
-     */
-    this(string mode) pure
-    {
-        this = parse(mode);
-    }
-
-    /**
-     * Combine file flags.
-     */
-    FileFlags opBinary(string op, T)(const T rhs) const pure nothrow
-        if (op == "|" && (
-            is(T : const FileFlags) || is(T : const Mode) ||
-            is(T : const Access) || is(T : const Share)
-            ))
-    {
-        FileFlags ff = this;
-        ff |= rhs;
-        return ff;
-    }
-
-    /// Ditto
-    void opOpAssign(string op, T)(const T rhs) pure nothrow
-        if (op == "|" && (
-            is(T : const FileFlags) || is(T : const Mode) ||
-            is(T : const Access) || is(T : const Share)
-            ))
-    {
-        static if (is(T : const FileFlags))
+        private int lockImpl(int operation, short type,
+            Position start, Position length)
         {
-            mode   |= rhs.mode;
-            access |= rhs.access;
-            share  |= rhs.share;
+            flock fl = {
+                l_type:   type,
+                l_whence: SEEK_SET,
+                l_start:  start,
+                l_len:    (length == File.end) ? 0 : length,
+                l_pid:    -1,
+            };
+
+            return .fcntl(_h, operation, &fl);
         }
-        else static if (is(T : const Mode))
-            mode   |= rhs;
-        else static if (is(T : const Access))
-            access |= rhs;
-        else static if (is(T : const Share))
-            share  |= rhs;
     }
-
-    ///
-    unittest
+    else version (Windows)
     {
-        assert(
-            (FileFlags(Mode.open, Access.read) |
-            FileFlags(Mode.create, Access.write)) ==
-            FileFlags(Mode.openOrCreate, Access.readWrite)
-            );
+        private BOOL lockImpl(alias F, Flags...)(
+            Position start, Position length, Flags flags)
+        {
+            immutable ULARGE_INTEGER
+                liStart = {QuadPart: start},
+                liLength = {QuadPart: length};
+
+            OVERLAPPED overlapped = {
+                Offset: liStart.LowPart,
+                OffsetHigh: liStart.HighPart,
+                hEvent: null,
+            };
+
+            return F(_h, flags, 0, liLength.LowPart, liLength.HighPart,
+                &overlapped);
+        }
     }
 
     /**
-     * Set flags via a mode string.
-     */
-    void opAssign(string mode) pure
-    {
-        this = parse(mode);
-    }
-
-    /**
-     * Parses an fopen-style mode string such as "rb+".
+     * Locks the specified file segment. If the file segment is already locked
+     * by another process, waits until the existing lock is released.
      *
-     * The regular expression corresponding to a mode string is
-     * ---
-     * [rwa](\+b|b\+|\+|b)?
-     * ---
+     * Note that this is a $(I per-process) lock. This locking mechanism should
+     * not be used for multi-threaded synchronization.
      */
-    static FileFlags parse(string s) pure
+    void lock(LockType lockType = LockType.readWrite,
+        Position start = File.start, Position length = File.end)
+    in { assert(isOpen); }
+    body
     {
-        import std.range : front, popFront, empty;
-
-        if (s.empty)
-            throw new Exception("mode string is empty");
-
-        FileFlags flags = void;
-        flags.share = Share.init;
-
-        switch (s.front)
+        version (Posix)
         {
-            case 'r':
-                flags.access = Access.read;
-                flags.mode   = Mode.open;
-                break;
-            case 'w':
-                flags.access = Access.write;
-                flags.mode   = Mode.openOrCreate | Mode.truncate;
-                break;
-            case 'a':
-                flags.access = Access.write;
-                flags.mode   = Mode.create | Mode.append;
-                break;
-            default:
-                throw new Exception("invalid mode string");
+            sysEnforce(
+                lockImpl(F_SETLKW,
+                    lockType == LockType.readWrite ? F_WRLCK : F_RDLCK,
+                    start, length,
+                ) != -1, "Failed to lock file"
+            );
         }
-
-        s.popFront();
-
-        // Note that the binary flag is ignored. Here, file streams are always
-        // binary streams. Text functionality is accessed via $(D io.text)
-        // instead.
-        foreach (i; 0 .. 2)
+        else version (Windows)
         {
-            if (s.empty) return flags;
+            sysEnforce(
+                lockImpl!LockFileEx(
+                    start, length,
+                    lockType == LockType.readWrite ? LOCKFILE_EXCLUSIVE_LOCK : 0
+                ), "Failed to lock file"
+            );
+        }
+    }
 
-            switch (s.front)
+    bool tryLock(LockType lockType = LockType.readWrite,
+        Position start = File.start, Offset length = File.end)
+    in { assert(isOpen); }
+    body
+    {
+        version (Posix)
+        {
+            import core.stdc.errno;
+
+            // Set the lock, return immediately if it's being held by another
+            // process.
+            if (lockImpl(F_SETLK,
+                    lockType == LockType.readWrite ? F_WRLCK : F_RDLCK,
+                    start, length) != 0
+                )
             {
-                case 'b':
-                    break;
-                case '+':
-                    flags.access = Access.readWrite;
-                    break;
-                default:
-                    throw new Exception("invalid mode string");
+                // Is another process is holding the lock?
+                if (errno == EACCES || errno == EAGAIN)
+                    return false;
+                else
+                    sysEnforce(false, "Failed to lock file");
             }
 
-            s.popFront();
+            return true;
         }
-
-        if (!s.empty)
-            throw new Exception("extraneous characters in mode string");
-
-        return flags;
-    }
-
-    unittest
-    {
-        import std.exception : collectException;
-
-        assert(FileFlags("r") == FileFlags.readExisting);
-        assert(FileFlags("w") == FileFlags.writeEmpty);
-        assert(FileFlags("a") == (FileFlags.writeNew | Mode.append));
-
-        assert(FileFlags("r+") == FileFlags.readWriteExisting);
-        assert(FileFlags("w+") == FileFlags.readWriteEmpty);
-        assert(FileFlags("a+") == (FileFlags.readWriteNew | Mode.append));
-
-        // Equivalent modes
-        assert(FileFlags("w+") == FileFlags("wb+"));
-        assert(FileFlags("r+") == FileFlags("rb+"));
-        assert(FileFlags("a+") == FileFlags("ab+"));
-        assert(FileFlags("w+b") == FileFlags("wb+"));
-        assert(FileFlags("r+b") == FileFlags("rb+"));
-        assert(FileFlags("a+b") == FileFlags("ab+"));
-
-        immutable badModes = ["", "rw", "asdf", "+r", "b+", " r", "r+b "];
-        foreach (m; badModes)
-            assert(collectException(FileFlags(m)));
-
-        FileFlags ff;
-        ff = "w+";
-        assert(ff == FileFlags("w+"));
-    }
-
-    // Platform specific file flags.
-    version (Posix)
-    package @property int posixFlags() const pure nothrow
-    {
-        int flags;
-
-        // Disable buffering. Buffering is handled by $(D io.buffered).
-        //flags |= O_DIRECT; // FIXME: O_DIRECT is not defined
-
-        if ((mode & Mode.openOrCreate) == Mode.openOrCreate)
-            flags |= O_CREAT;
-        else if (mode & Mode.create)
-            flags |= O_EXCL | O_CREAT;
-        // Mode.open by default
-
-        if (mode & Mode.truncate)
-            flags |= O_TRUNC;
-
-        if (mode & Mode.append)
-            flags |= O_APPEND;
-
-        if (access == Access.readWrite)
-            flags |= O_RDWR;
-        else if (access & Access.read)
-            flags |= O_RDONLY;
-        else if (access & Access.write)
-            flags |= O_WRONLY;
-
-        return flags;
-    }
-
-    else version (Windows)
-    @property auto windowsFlags() const pure nothrow
-    {
-        struct WindowsFlags
+        else version (Windows)
         {
-            DWORD access;
-            DWORD share;
-            DWORD mode;
+            immutable flags = (lockType == LockType.readWrite) ?
+                LOCKFILE_EXCLUSIVE_LOCK : 0;
+            if (!lockImpl!LockFileEx(start, length,
+                    flags | LOCKFILE_FAIL_IMMEDIATELY)
+                )
+            {
+                if (GetLastError() == ERROR_IO_PENDING ||
+                    GetLastError() == ERROR_LOCK_VIOLATION)
+                    return false;
+                else
+                    sysEnforce(false, "Failed to lock file");
+            }
+
+            return true;
         }
+    }
 
-        WindowsFlags flags;
-
-        // Access flags
-        if (access & Access.read)
-            flags.access |= GENERIC_READ;
-        if (access & Access.write)
-            flags.access |= GENERIC_WRITE;
-        if (mode & Mode.append)
-            flags.access |= FILE_APPEND_DATA;
-
-        // Sharing flags
-        if (share & Share.read)
-            flags.share |= FILE_SHARE_READ;
-        if (share & Share.write)
-            flags.share |= FILE_SHARE_WRITE;
-        if (share & Share.remove)
-            flags.share |= FILE_SHARE_DELETE;
-
-        // Creation flags
-        if (mode & Mode.truncate)
+    void unlock(Position start = File.start, Offset length = File.end)
+    in { assert(isOpen); }
+    body
+    {
+        version (Posix)
         {
-            if (mode & Mode.create)
-                flags.mode = CREATE_ALWAYS;
-            else
-                flags.mode = TRUNCATE_EXISTING;
+            sysEnforce(
+                lockImpl(F_SETLK, F_UNLCK, start, length) != -1,
+                "Failed to lock file"
+            );
         }
-        else if ((mode & Mode.openOrCreate) == Mode.openOrCreate)
-            flags.mode = OPEN_ALWAYS;
-        else if (mode & Mode.open)
-            flags.mode = OPEN_EXISTING;
-        else if (mode & Mode.create)
-            flags.mode = CREATE_NEW;
-
-        return flags;
+        else version (Windows)
+        {
+            sysEnforce(lockImpl!UnlockFileEx(start, length),
+                    "Failed to unlock file");
+        }
     }
 }
+
 
 version (unittest)
 {
