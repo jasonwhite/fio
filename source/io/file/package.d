@@ -6,5 +6,5 @@
 module io.file;
 
 public import io.file.flags;
-public import io.file.file;
+public import io.file.stream;
 public import io.file.pipe;

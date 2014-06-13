@@ -3,7 +3,7 @@
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
-module io.file.file;
+module io.file.stream;
 
 public import io.file.flags;
 
@@ -117,7 +117,7 @@ struct File
                     0,    // Access flags, ignored
                     true, // Allow this handle to be inherited
                     DUPLICATE_SAME_ACCESS
-                    );
+                );
                 sysEnforce(ret, "Failed to duplicate handle");
             }
         }
@@ -130,7 +130,7 @@ struct File
         auto a = File(tf.name, FileFlags.writeEmpty);
 
         {
-            File b = a; // Copy
+            auto b = a; // Copy
             b.write("abcd");
         }
 
@@ -369,7 +369,8 @@ struct File
             sysEnforce(
                 h != InvalidHandle,
                 "Failed to create temporary file '"~ name ~"'"
-                );
+            );
+
             return File(h);
         }
     }
@@ -387,8 +388,6 @@ struct File
      * Returns the internal file handle.
      */
     @property typeof(_h) handle() pure nothrow
-    in { assert(isOpen); }
-    body
     {
         return _h;
     }
@@ -484,7 +483,7 @@ struct File
     /// Special positions.
     static immutable Position
         start = 0,
-          end = Position.max;
+        end   = Position.max;
 
     private enum From
     {

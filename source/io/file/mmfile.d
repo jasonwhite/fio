@@ -5,7 +5,7 @@
  */
 module io.mmfile;
 
-import io.file.file;
+public import io.file.stream;
 
 version (Posix)
 {
@@ -135,15 +135,12 @@ struct MmFile
         }
     }
 
-    /**
-     * TODO: Write a description.
-     */
     /*void remap(size_t length, size_t offset = 0, bool share = true)
     {
         version (Posix)
         {
             int flags = (share ? MAP_SHARED : MAP_PRIVATE);
-            void *p = mremap(data.ptr, data.length, flags, -1, offset);
+            void *p = mremap(data.ptr, data.length, length, flags);
             sysEnforce(ret == 0, "Failed to remap memory");
         }
     }*/

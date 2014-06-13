@@ -5,7 +5,7 @@
  */
 module io.file.pipe;
 
-import io.file.file;
+import io.file.stream;
 
 struct Pipe
 {
