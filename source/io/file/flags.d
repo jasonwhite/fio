@@ -170,6 +170,22 @@ struct FileFlags
     }
 
     /**
+     * Set flags via a mode string.
+     */
+    void opAssign(string mode) pure
+    {
+        this = parse(mode);
+    }
+
+    unittest
+    {
+        FileFlags ff;
+        ff = "w+";
+        assert(ff == FileFlags.readWriteEmpty);
+        assert(ff == FileFlags("w+"));
+    }
+
+    /**
      * Combine file flags.
      */
     FileFlags opBinary(string op, T)(const T rhs) const pure nothrow
@@ -207,19 +223,16 @@ struct FileFlags
     ///
     unittest
     {
-        assert(
+        static assert(
             (FileFlags(Mode.open, Access.read) |
             FileFlags(Mode.create, Access.write)) ==
             FileFlags(Mode.openOrCreate, Access.readWrite)
             );
-    }
 
-    /**
-     * Set flags via a mode string.
-     */
-    void opAssign(string mode) pure
-    {
-        this = parse(mode);
+        static assert(
+            (FileFlags(Mode.open) | Access.read) ==
+            FileFlags(Mode.open, Access.read)
+            );
     }
 
     /**
@@ -317,10 +330,6 @@ struct FileFlags
         immutable badModes = ["", "rw", "asdf", "+r", "b+", " r", "r+b "];
         foreach (m; badModes)
             assert(collectException(FileFlags(m)));
-
-        FileFlags ff;
-        ff = "w+";
-        assert(ff == FileFlags("w+"));
     }
 
     // Platform specific file flags.
