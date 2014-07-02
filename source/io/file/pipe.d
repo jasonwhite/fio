@@ -11,12 +11,26 @@ struct Pipe
 {
     File readEnd;  // Read end
     File writeEnd; // Write end
+
+    /**
+     * Automatically forward reads and writes to the appropriate ends of the
+     * pipe.
+     */
+    size_t read(void[] buf)
+    {
+        return readEnd.read(buf);
+    }
+
+    /// Ditto
+    size_t write(in void[] buf)
+    {
+        return writeEnd.write(buf);
+    }
 }
 
 /**
  * Creates an unnamed unidirectional pipe that can be written to on one end
- * and read from on the other. A bidirectional pipe can be created with two
- * unidirectional pipes.
+ * and read from on the other.
  */
 Pipe pipe()
 {
@@ -49,9 +63,9 @@ unittest
 
     // Write to one end of the pipe...
     immutable message = "Indubitably.";
-    p.writeEnd.write(message);
+    p.write(message);
 
     // ...and read from it on the other.
     char[message.length] buf;
-    assert(buf[0 .. p.readEnd.read(buf)] == message);
+    assert(buf[0 .. p.read(buf)] == message);
 }
