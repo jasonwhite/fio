@@ -74,6 +74,11 @@ struct MmFile
             if (length == 0)
                 length = file.length;
 
+            // POSIX does not allow the file to be empty. mmap will catch this
+            // error as "Invalid argument", but since this is a common-enough
+            // case, we handle it here with a better error message.
+            sysEnforce(length != 0, "Cannot map empty file.");
+
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 
             void *p = mmap(
@@ -215,4 +220,16 @@ unittest
         auto data = cast(char[])map;
         assert(data[0 .. newData.length] == newData[]);
     }
+}
+
+unittest
+{
+    import std.exception;
+
+    auto tf = testFile();
+
+    auto f = File(tf.name, FileFlags.readWriteEmpty);
+    auto map = f.MmFile(Access.readWrite);
+    auto data = cast(char[])map;
+    assert(data.length == 0);
 }
