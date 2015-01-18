@@ -5,16 +5,26 @@
  */
 module io.file.stream;
 
+import io.stream;
 public import io.file.flags;
 
 version (unittest)
+{
     import file = std.file; // For easy file creation/deletion.
+    import io.file.temp;
+}
 
 version (Posix)
 {
     import core.sys.posix.fcntl;
     import core.sys.posix.unistd;
     import std.exception : ErrnoException;
+
+    version (linux)
+    {
+        extern (C): @system: nothrow:
+        ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+    }
 
     enum
     {
@@ -93,33 +103,30 @@ struct File
 
     /**
      * When a $(D File) is copied, the internal file handle is duplicated.
-     *
-     * If reference counting is desired instead, wrap $(D File) with $(D
-     * RefCounted).
      */
     this(this)
     {
+        if (!isOpen)
+            return;
+
         version (Posix)
         {
-            if (isOpen)
-                _h = .dup(_h);
+            _h = .dup(_h);
+            sysEnforce(_h != InvalidHandle, "Failed to duplicate handle");
         }
         else version (Windows)
         {
-            if (isOpen)
-            {
-                auto proc = GetCurrentProcess();
-                auto ret = DuplicateHandle(
-                    proc, // Process with the file handle
-                    _h,   // Handle to duplicate
-                    proc, // Process for the duplicated handle
-                    &_h,  // The duplicated handle
-                    0,    // Access flags, ignored
-                    true, // Allow this handle to be inherited
-                    DUPLICATE_SAME_ACCESS
-                );
-                sysEnforce(ret, "Failed to duplicate handle");
-            }
+            auto proc = GetCurrentProcess();
+            auto ret = DuplicateHandle(
+                proc, // Process with the file handle
+                _h,   // Handle to duplicate
+                proc, // Process for the duplicated handle
+                &_h,  // The duplicated handle
+                0,    // Access flags, ignored
+                true, // Allow this handle to be inherited
+                DUPLICATE_SAME_ACCESS
+            );
+            sysEnforce(ret, "Failed to duplicate handle");
         }
     }
 
@@ -166,12 +173,13 @@ struct File
      * Example:
      * ---
      * // Create a brand-new file and write to it. Throws an exception if the
-     * // file already exists.
+     * // file already exists. The file is automatically closed when it falls
+     * // out of scope.
      * auto f = File("filename", FileFlags.writeNew);
      * f.write("Hello world!");
      * ---
      */
-    this(string name, FileFlags flags = FileFlags.readExisting)
+    this(string name, in FileFlags flags = FileFlags.readExisting)
     {
         version (Posix)
         {
@@ -186,7 +194,7 @@ struct File
             with (flags.windowsFlags)
             {
                 _h = .CreateFileW(
-                    toUTF16z(name),        // File name
+                    name.toUTF16z(),       // File name
                     access,                // Desired access
                     share,                 // Share mode
                     null,                  // Security attributes
@@ -198,33 +206,6 @@ struct File
         }
 
         sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name ~"'");
-    }
-
-    /**
-     * Takes control of a file handle.
-     *
-     * It is assumed that we have exclusive control over the file handle and will
-     * be closed upon destruction as usual.
-     *
-     * This function is useful in a couple of situations:
-     * $(UL
-     *   $(LI
-     *     The file must be opened with flags that cannot be obtained via $(D
-     *     FileFlags)
-     *   )
-     *   $(LI
-     *     A special file handle must be opened (e.g., $(D stdout), a pipe).
-     *   )
-     * )
-     *
-     * Params:
-     *   h = The handle to assume control over. For Posix, this is a file
-     *       descriptor ($(D int)). For Windows, this is an object handle ($(D
-     *       HANDLE)).
-     */
-    this(Handle h)
-    {
-        _h = h;
     }
 
     unittest
@@ -256,15 +237,39 @@ struct File
     }
 
     /**
+     * Takes control of a file handle.
+     *
+     * It is assumed that we have exclusive control over the file handle and will
+     * be closed upon destruction as usual.
+     *
+     * This function is useful in a couple of situations:
+     * $(UL
+     *   $(LI
+     *     The file must be opened with special flags that cannot be obtained
+     *     via $(D FileFlags)
+     *   )
+     *   $(LI
+     *     A special file handle must be opened (e.g., $(D stdout), a pipe).
+     *   )
+     * )
+     *
+     * Params:
+     *   h = The handle to assume control over. For Posix, this is a file
+     *       descriptor ($(D int)). For Windows, this is an object handle ($(D
+     *       HANDLE)).
+     */
+    this(Handle h)
+    {
+        _h = h;
+    }
+
+    /**
      * Closes the file stream.
      */
     ~this()
     {
-        if (_h == InvalidHandle)
-        {
-            // Never opened. This happens with default construction.
-            return;
-        }
+        // Never opened. This happens with default construction.
+        if (!isOpen) return;
 
         version (Posix)
         {
@@ -284,108 +289,25 @@ struct File
         return _h != InvalidHandle;
     }
 
-    version (none) unittest
+    /// Ditto
+    alias opCast(T : bool) = isOpen;
+
+    unittest
     {
         auto tf = testFile();
 
         File f;
         assert(!f.isOpen);
+        assert(!f);
 
         f = File(tf.name, FileFlags.writeAlways);
         assert(f.isOpen);
+        assert(f);
     }
 
     /**
-     * Creates a temporary file. The file is automatically deleted when it is no
-     * longer referenced. The temporary file is always opened with both read and
-     * write access.
-     */
-    static File temp()
-    {
-        version (Posix)
-        {
-            /* Implementation note: Since Linux 3.11, there is the flag
-             * O_TMPFILE which can be used to open a temporary file. This
-             * creates an unnamed inode in the specified directory. Because the
-             * inode is unnamed, it will be automatically deleted once the file
-             * descriptor is closed. In the future, perhaps 2016, once Linux
-             * 3.11 is not so new, this flag should be used instead.
-             */
-
-            import core.sys.posix.stdlib : mkstemp;
-
-            // We should be able to rely on /tmp existing. /tmp is usually
-            // mounted as a virtual file system that is backed by RAM and should
-            // be very fast to access.
-            auto name = "/tmp/XXXXXX\0".dup;
-
-            int fd = mkstemp(name.ptr);
-            sysEnforce(fd != InvalidHandle, "Failed to create a temporary file");
-
-            // Unlink the file to ensure it is deleted automatically when all
-            // file descriptors referring to it are closed.
-            sysEnforce(unlink(name.ptr) == 0, "Failed to unlink temporary file");
-
-            return File(fd);
-        }
-        else version (Windows)
-        {
-            wchar[MAX_PATH-14] dir;
-            sysEnforce(
-                GetTempPathW(dir.length, dir.ptr),
-                "Failed to get temporary file directory"
-                );
-
-            wchar[MAX_PATH] path;
-            sysEnforce(
-                GetTempFileNameW(dir.ptr, "tmp", 0, path.ptr),
-                "Failed to generate temporary file path"
-                );
-
-            auto h = .CreateFileW(
-                // Temporary file name
-                path.ptr,
-
-                // Desired access
-                GENERIC_READ | GENERIC_WRITE,
-
-                // Share mode
-                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-
-                // Security attributes
-                null,
-
-                // Creation disposition
-                CREATE_NEW,
-
-                // Flags and attributes
-                FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY |
-                FILE_FLAG_DELETE_ON_CLOSE,
-
-                // Template file
-                null,
-            );
-
-            sysEnforce(
-                h != InvalidHandle,
-                "Failed to create temporary file '"~ name ~"'"
-            );
-
-            return File(h);
-        }
-    }
-
-    ///
-    unittest
-    {
-        auto f = File.temp();
-        assert(f.position == 0);
-        assert(f.write("Hello") == 5);
-        assert(f.position == 5);
-    }
-
-    /**
-     * Returns the internal file handle.
+     * Returns the internal file handle. On POSIX, this is a file descriptor. On
+     * Windows, this is an object handle.
      */
     @property typeof(_h) handle() pure nothrow
     {
@@ -393,13 +315,14 @@ struct File
     }
 
     /**
-     * Read data from the file.
+     * Reads data from the file.
      *
      * Params:
      *   buf = The buffer to read the data into. The length of the buffer
      *         specifies how much data should be read.
      *
-     * Returns: The number of bytes that were read.
+     * Returns: The number of bytes that were read. 0 indicates that the end of
+     * the file has been reached.
      */
     size_t read(void[] buf)
     in { assert(isOpen); }
@@ -408,7 +331,7 @@ struct File
         version (Posix)
         {
             immutable n = .read(_h, buf.ptr, buf.length);
-            sysEnforce(n != -1);
+            sysEnforce(n >= 0);
             return n;
         }
         else version (Windows)
@@ -433,8 +356,7 @@ struct File
     }
 
     /**
-     * Write data to the file. Returns the number of bytes written (not the
-     * number of $(D T)s written).
+     * Writes data to the file.
      *
      * Params:
      *   data = The data to write to the file. The length of the slice indicates
@@ -485,14 +407,14 @@ struct File
         start = 0,
         end   = Position.max;
 
-    private enum From
-    {
-        start,
-        here,
-        end,
-    }
-
-    private ulong seek(From from, Offset offset)
+    /**
+     * Seeks relative to a position.
+     *
+     * Params:
+     *   offset = Offset relative to a reference point.
+     *   from   = Optional reference point.
+     */
+    ulong seekTo(Offset offset, From from = From.start)
     in { assert(isOpen); }
     body
     {
@@ -507,7 +429,7 @@ struct File
                 case From.end:   whence = SEEK_END; break;
             }
 
-            auto pos = .lseek(_h, offset, whence);
+            immutable pos = .lseek(_h, offset, whence);
             sysEnforce(pos != -1, "Failed to seek to position");
             return pos;
         }
@@ -538,51 +460,13 @@ struct File
         immutable data = "abcdefghijklmnopqrstuvwxyz";
         assert(f.write(data) == data.length);
 
-        assert(f.seekTo(f.start, 5) == 5);
+        assert(f.seekTo(5) == 5);
         assert(f.skip(5) == 10);
-        assert(f.seekTo(f.end, -5) == data.length - 5);
+        assert(f.seekTo(-5, From.end) == data.length - 5);
 
         // Test large offset
         Position p = cast(Offset)int.max * 2;
-        assert(f.seekTo(f.start, p) == p);
-    }
-
-    /**
-     * Seeks relative to the current position
-     */
-    Position skip(Offset offset)
-    {
-        return seek(From.here, offset);
-    }
-
-    /**
-     * Seeks relative to a position.
-     *
-     * Params:
-     *   pos    = Absolute position in the file. $(D File.start) and $(D File.end)
-     *            can be used as canonical markers in the file.
-     *   offset = Optional offset from the absolute position.
-     */
-    Position seekTo(Position pos, Offset offset = 0)
-    {
-        if (pos == end)
-            return seek(From.end, offset);
-        else
-            return seek(From.start, offset + pos);
-    }
-
-    /**
-     * Gets/sets the current position in the file.
-     */
-    @property Position position()
-    {
-        return skip(0);
-    }
-
-    /// Ditto
-    @property void position(Position p)
-    {
-        seekTo(p);
+        assert(f.seekTo(p) == p);
     }
 
     /**
@@ -642,10 +526,9 @@ struct File
         }
         else version (Windows)
         {
-            // FIXME: This should be atomic.
-            // Seek to the position
-            auto pos = seekTo(len);
-            scope (exit) seekTo(pos);
+            // FIXME: Is this thread-safe?
+            auto pos = seekTo(len);   // Seek to the correct position
+            scope (exit) seekTo(pos); // Seek back
 
             sysEnforce(
                 SetEndOfFile(_h),
@@ -710,11 +593,13 @@ struct File
         private int lockImpl(int operation, short type,
             Position start, Position length)
         {
+            import std.conv : to;
+
             flock fl = {
                 l_type:   type,
                 l_whence: SEEK_SET,
-                l_start:  start,
-                l_len:    (length == File.end) ? 0 : length,
+                l_start:  to!off_t(start),
+                l_len:    (length == File.end) ? 0 : to!off_t(length),
                 l_pid:    -1,
             };
 
@@ -746,10 +631,10 @@ struct File
      * by another process, waits until the existing lock is released.
      *
      * Note that this is a $(I per-process) lock. This locking mechanism should
-     * not be used for multi-threaded synchronization.
+     * not be used for thread-level synchronization.
      */
     void lock(LockType lockType = LockType.readWrite,
-        Position start = File.start, Position length = File.end)
+        Position start = this.start, Position length = this.end)
     in { assert(isOpen); }
     body
     {
@@ -774,7 +659,7 @@ struct File
     }
 
     bool tryLock(LockType lockType = LockType.readWrite,
-        Position start = File.start, Offset length = File.end)
+        Position start = this.start, Position length = this.end)
     in { assert(isOpen); }
     body
     {
@@ -800,11 +685,9 @@ struct File
         }
         else version (Windows)
         {
-            immutable flags = (lockType == LockType.readWrite) ?
-                LOCKFILE_EXCLUSIVE_LOCK : 0;
-            if (!lockImpl!LockFileEx(start, length,
-                    flags | LOCKFILE_FAIL_IMMEDIATELY)
-                )
+            immutable flags = LOCKFILE_FAIL_IMMEDIATELY | (
+                (lockType == LockType.readWrite) ? LOCKFILE_EXCLUSIVE_LOCK : 0);
+            if (!lockImpl!LockFileEx(start, length, flags))
             {
                 if (GetLastError() == ERROR_IO_PENDING ||
                     GetLastError() == ERROR_LOCK_VIOLATION)
@@ -817,7 +700,7 @@ struct File
         }
     }
 
-    void unlock(Position start = File.start, Offset length = File.end)
+    void unlock(Position start = this.start, Position length = this.end)
     in { assert(isOpen); }
     body
     {
@@ -834,8 +717,90 @@ struct File
                     "Failed to unlock file");
         }
     }
+
+    /**
+     * Flushes all modified cached data of the file to disk. This includes data
+     * written to the file as well as meta data (e.g., last modified time, last
+     * access time).
+     */
+    void flush()
+    in { assert(isOpen); }
+    body
+    {
+        version (Posix)
+        {
+            sysEnforce(fsync(_h) == 0);
+        }
+        else version (Windows)
+        {
+            sysEnforce(FlushFileBuffers(_h) != 0);
+        }
+    }
+
+    /**
+     * Like $(D sync()), but does not flush meta data.
+     *
+     * NOTE: On Windows, this is exactly the same as $(D sync()).
+     */
+    void flushData()
+    in { assert(isOpen); }
+    body
+    {
+        version (Posix)
+        {
+            sysEnforce(fdatasync(_h) == 0);
+        }
+        else version (Windows)
+        {
+            sysEnforce(FlushFileBuffers(_h) != 0);
+        }
+    }
+
+    /**
+     * Copies the rest of this file to the other. The positions of both files
+     * are appropriately incremented, as if one called read()/write() to copy
+     * the file. The number of copied bytes is returned.
+     */
+    version (linux)
+    Position copyTo()(auto ref File other, size_t n = size_t.max/2-1)
+    {
+        auto written = .sendfile(other._h, _h, null, n);
+        sysEnforce(written >= 0, "Failed to copy file.");
+        return written;
+    }
+
+    version (linux)
+    unittest
+    {
+        import std.conv : to;
+
+        auto a = tempFile();
+        auto b = tempFile();
+        immutable s = "This will be copied to the other file.";
+        a.write(s);
+        a.position = 0;
+        a.copyTo(b);
+        assert(a.position == s.length);
+
+        b.position = 0;
+
+        char[s.length] buf;
+        assert(b.read(buf) == s.length);
+        assert(buf == s);
+    }
+
+    /* TODO: Add function to get disk sector size for the file. Use
+     * GetFileInformationByHandleEx with FileStorageInfo. See
+     * http://msdn.microsoft.com/en-us/library/windows/desktop/hh447302(v=vs.85).aspx
+     */
 }
 
+unittest
+{
+    static assert(isSource!File);
+    static assert(isSink!File);
+    static assert(isSeekable!File);
+}
 
 version (unittest)
 {

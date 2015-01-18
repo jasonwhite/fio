@@ -3,7 +3,7 @@
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
-module io.mmfile;
+module io.file.mmap;
 
 public import io.file.stream;
 
@@ -35,7 +35,7 @@ private @property int prot(Access access) pure nothrow
  * a slice of memory. For many use cases, it is a very efficient means of
  * accessing a file.
  */
-struct MmFile
+struct MemoryMap
 {
     // Memory mapped data.
     void[] data;
@@ -50,24 +50,28 @@ struct MmFile
      *
      * Params:
      *   file = Open file to be mapped. The file may be closed after being
-     *      mapped to memory. The file must not be a terminal or a pipe. It must
-     *      have random access capabilities.
-     *   access = Access flags of the memory region.
+     *          mapped to memory. The file must not be a terminal or a pipe. It
+     *          must have random access capabilities.
+     *   access = Access flags of the memory region. Read-only access by
+     *            default.
      *   length = Length of the file. If 0, the length is taken to be the size
-     *      of the file.
+     *            of the file. 0 by default.
      *   start = Position within the file to start the mapping. This must be
-     *      a multiple of the page size (generally 4096).
+     *           a multiple of the page size (generally 4096). 0 by default.
      *   share = If true, changes are visible to other processes. If false,
-     *      changes are not visible to other processes and are never written
-     *      back to the file. True by default.
+     *           changes are not visible to other processes and are never
+     *           written back to the file. True by default.
      *   address = The preferred memory address to map the file to. This is just
-     *      a hint, the system is may or may not use this address. If null, the
-     *      system chooses an appropriate address.
+     *             a hint, the system is may or may not use this address. If
+     *             null, the system chooses an appropriate address. Null by
+     *             default.
      *
      * Throws: SysException
      */
     this()(auto ref File file, Access access = Access.read, size_t length = 0,
         File.Position start = 0, bool share = true, void* address = null)
+    in { assert(file.isOpen); }
+    body
     {
         version (Posix)
         {
@@ -98,13 +102,21 @@ struct MmFile
         {
             // TODO
             //auto fileMapping = CreateFileMappingA(file.handle, null, );
+            static assert(false, "Implement me!");
         }
     }
 
     /**
+     * Checks if the file is mapped.
+     */
+    @property bool isMapped() const pure nothrow
+    {
+        return data !is null;
+    }
+
+    /**
      * An anonymous mapping. An anonymous mapping is not backed by any file. Its
-     * contents are initialized to 0. This is effectively equivalent to
-     * allocating memory.
+     * contents are initialized to 0. This is equivalent to allocating memory.
      */
     /*this(Access access, size_t length, bool share = true, void* address = null)
     {
@@ -124,6 +136,8 @@ struct MmFile
      */
     ~this()
     {
+        if (!isMapped) return;
+
         version (Posix)
         {
             sysEnforce(
@@ -154,6 +168,8 @@ struct MmFile
      * Synchronously writes any pending changes to the file on the file system.
      */
     void flush()
+    in { assert(isMapped); }
+    body
     {
         version (Posix)
         {
@@ -176,6 +192,8 @@ struct MmFile
      * Asynchronously writes any pending changes to the file on the file system.
      */
     void flushAsync()
+    in { assert(isMapped); }
+    body
     {
         version (Posix)
         {
@@ -206,7 +224,7 @@ unittest
         auto f = File(tf.name, FileFlags.readWriteEmpty);
         f.length = newData.length;
 
-        auto map = f.MmFile(Access.readWrite);
+        auto map = f.MemoryMap(Access.readWrite);
         auto data = cast(char[])map;
 
         data[0 .. newData.length] = newData[];
@@ -216,7 +234,7 @@ unittest
 
     // Read the file back in
     {
-        auto map = File(tf.name, FileFlags.readExisting).MmFile();
+        auto map = File(tf.name, FileFlags.readExisting).MemoryMap();
         auto data = cast(char[])map;
         assert(data[0 .. newData.length] == newData[]);
     }
@@ -229,7 +247,6 @@ unittest
     auto tf = testFile();
 
     auto f = File(tf.name, FileFlags.readWriteEmpty);
-    auto map = f.MmFile(Access.readWrite);
-    auto data = cast(char[])map;
-    assert(data.length == 0);
+    assert(f.length == 0);
+    assert(collectException!SysException(f.MemoryMap(Access.readWrite)));
 }

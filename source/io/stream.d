@@ -1,102 +1,10 @@
 /**
- * Copyright: Copyright Jason White, 2013-
+ * Copyright: Copyright Jason White, 2014
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
 module io.stream;
 
-version (none):
-
-/**
- * Checks if a type is a source. A source is a stream that can be read from and
- * must define the member function $(D readData).
- */
-enum isSource(S) =
-    is(typeof({
-        S s = void;
-        ubyte[] buf;
-        size_t d = s.readData(buf);
-    }));
-
-unittest
-{
-    static struct A {}
-    static assert(!isSource!A);
-
-    static struct B {
-        ubyte[] readData(ubyte[] buf) { return buf; }
-    }
-    static assert(isSource!B);
-
-    static struct C {
-        void readData() {}
-    }
-    static assert(!isSource!C);
-
-    static struct D {
-        char[] readData(char[] buf) { return buf; }
-    }
-    static assert(!isSource!D);
-}
-
-/**
- * Checks if a type is a sink. A sink is a stream that can be written to and must
- * define the member function $(D writeData).
- */
-enum isSink(S) =
-    is(typeof({
-        S s = void;
-        size_t n = s.writeData(cast(ubyte[])[1, 2, 3]);
-    }));
-
-unittest
-{
-    static struct A {}
-    static assert(!isSink!A);
-
-    static struct B {
-        size_t writeData(in ubyte[] data) { return 0; }
-    }
-    static assert(isSink!B);
-
-    static struct C {
-        void writeData() {}
-    }
-    static assert(!isSink!C);
-
-    static struct D {
-        size_t writeData(in D[] buf) { return 0; }
-    }
-    static assert(!isSink!D);
-}
-
-/**
- * Checks if a type is seekable.
- */
-enum isSeekable(S) =
-    is(typeof({
-        S s = void;
-        S.Mark m = void;
-        m = s.mark();
-        m = s.seek(5);
-        m = s.seek(m, 5);
-        m = s.seek(m);
-    }));
-
-unittest
-{
-    static struct A {}
-    static assert(!isSeekable!A);
-
-    static struct B {
-        alias Mark = size_t;
-
-        Mark mark() { return 0; }
-        Mark seek(ptrdiff_t offset) { return 0; }
-        Mark seek(Mark m, ptrdiff_t offset = 0) { return 0; }
-    }
-    static assert(isSeekable!B);
-}
 
 /**
  * Stream exceptions.
@@ -113,6 +21,139 @@ class WriteException  : StreamException { this(string msg) { super(msg); } }
 class SeekException   : StreamException { this(string msg) { super(msg); } }
 
 /**
+ * Relative position to seek from.
+ */
+enum From
+{
+    /// Seek relative to the beginning of the stream.
+    start,
+
+    /// Seek relative to the current position in the stream.
+    here,
+
+    /// Seek relative to the end of the stream.
+    end,
+}
+
+/**
+ * Checks if a type is a source. A source is a stream that can be read from and
+ * must define the member function $(D read).
+ */
+enum isSource(Stream) =
+    is(typeof({
+        Stream s = void;
+        size_t[] buf;
+        auto n = s.read(buf);
+    }));
+
+unittest
+{
+    static struct A {}
+    static assert(!isSource!A);
+
+    static struct B {
+        size_t read(void[] buf) { return buf.length; }
+    }
+    static assert(isSource!B);
+
+    static struct C {
+        void read() {}
+    }
+    static assert(!isSource!C);
+}
+
+/**
+ * Checks if a type is a sink. A sink is a stream that can be written to and must
+ * define the member function $(D write).
+ */
+enum isSink(Stream) =
+    is(typeof({
+        Stream s = void;
+        immutable ubyte[] data = [1, 2, 3];
+        auto n = s.write(data);
+    }));
+
+unittest
+{
+    static struct A {}
+    static assert(!isSink!A);
+
+    static struct B {
+        size_t write(in ubyte[] data) { return 0; }
+    }
+    static assert(isSink!B);
+
+    static struct C {
+        void write() {}
+    }
+    static assert(!isSink!C);
+}
+
+/**
+ * Checks if a type is seekable. A seekable stream must define the member
+ * function $(D seek).
+ */
+enum isSeekable(Stream) =
+    is(typeof({
+        Stream s = void;
+        auto pos = s.seekTo(0, From.start);
+    }));
+
+unittest
+{
+    static struct A {}
+    static assert(!isSeekable!A);
+
+    static struct B {
+        size_t seekTo(ptrdiff_t offset, From from) { return 0; }
+    }
+    static assert(isSeekable!B);
+
+    static struct C {
+        // Should return the current position.
+        void seekTo(ptrdiff_t offset, From from) {}
+    }
+    static assert(!isSeekable!C);
+}
+
+
+/**
+ * Set the position (in bytes) of a stream. The stream must be seekable.
+ *
+ * Params:
+ *   stream = The stream to set the position of.
+ *   offset = The offset into the stream.
+ */
+@property void position(Stream, Offset)(auto ref Stream stream, Offset offset)
+    if (isSeekable!Stream)
+{
+    stream.seekTo(offset, From.start);
+}
+
+/**
+ * Get the position (in bytes) of a stream. The stream must be seekable.
+ *
+ * Params:
+ *   stream = The stream to set the position of.
+ */
+@property auto position(Stream)(auto ref Stream stream)
+    if (isSeekable!Stream)
+{
+    return stream.seekTo(0, From.here);
+}
+
+/**
+ * Skip the specified number of bytes forward or backwards. The stream must be
+ * seekable.
+ */
+auto skip(Stream, Offset)(auto ref Stream stream, Offset offset)
+    if (isSeekable!Stream)
+{
+    return stream.seekTo(offset, From.here);
+}
+
+
+/**
  * A stream implementation of /dev/null.
  *
  * A stream that does nearly nothing. Reads return zero's and writes get sucked
@@ -123,14 +164,12 @@ class SeekException   : StreamException { this(string msg) { super(msg); } }
  */
 struct NullStream
 {
-    @disable this(this);
-
     /**
      * Fills the buffer with zeros.
      */
-    size_t readData(ubyte[] buf)
+    size_t read(void[] buf)
     {
-        foreach (ref e; buf)
+        foreach (ref e; cast(ubyte[])buf)
             e = e.init;
 
         return buf.length;
@@ -139,7 +178,7 @@ struct NullStream
     /**
      * Simply returns the length of the data array.
      */
-    size_t writeData(in ubyte[] data)
+    size_t write(in void[] data)
     {
         return data.length;
     }
@@ -149,91 +188,131 @@ unittest
 {
     auto s = NullStream();
 
-    static assert(isSource!NullStream && isSink!NullStream);
+    static assert(
+         isSource!NullStream &&
+         isSink!NullStream &&
+        !isSeekable!NullStream
+        );
 
-    // reading
-    auto buf = new ubyte[16];
-    buf[4] = buf[10] = 42; // Random samples to be overwritten
-    assert(s.readData(buf) == buf);
-    assert(buf[4] == 0 && buf[10] == 0);
+    // Reading
+    ubyte[6] buf = [4, 8, 15, 16, 23, 42];
+    assert(s.read(buf) == buf.length);
+    assert(buf == [0, 0, 0, 0, 0, 0]);
 
-    // writing
-    assert(s.writeData([1, 2, 3, 4]) == 4);
+    // Writing
+    assert(s.write(buf) == buf.length);
 }
 
 /**
- * Returns a range that iterates over a stream a chunk of bytes at a time.
- * Buffering will be taken advantage of if it is available in the stream.
+ * Reads exactly the number of bytes requested from the stream. Throws an
+ * exception if it cannot be done. Returns the number of bytes read.
+ *
+ * Throws: ReadException if the given buffer cannot be completely filled.
  */
-version (none)
-auto byChunk(Source stream, size_t size)
+size_t readExactly(Source)(Source source, void[] buf)
 {
-    static struct ByChunk(S stream)
-    {
-        private
-        {
-            S _stream;
-            size_t _size;
+    auto bytesRead = source.read(buf);
+    if (bytesRead != buf.length)
+        throw new ReadException("Failed to fill entire buffer with read");
 
-            // TODO: Check if stream is buffered?
-            ubyte[] _chunk;
-        }
-
-        this(S stream, size_t size)
-        in
-        {
-            assert(size > 0);
-        }
-        body
-        {
-            _stream = stream;
-            _size = size;
-        }
-
-        /**
-          Returns true if the end of the stream has been reached.
-         */
-        bool empty()
-        {
-            // TODO
-            return true;
-        }
-
-        /**
-         * Returns the current chunk. The returned slice is only valid until the
-         * next call to $(D popFront).
-         */
-        ubyte[] front()
-        {
-            // TODO
-            return [];
-        }
-
-        /**
-         * Advances to the next chunk.
-         */
-        void popFront()
-        {
-            // TODO
-        }
-    }
-
-    return ByChunk!S(stream, size);
+    return bytesRead;
 }
 
 /**
- * Returns a range that iterates over a type T in a stream.
+ * Writes exactly the given buffer and no less. Throws an exception if it cannot
+ * be done. Returns the number of bytes written.
+ *
+ * Throws: WriteException if the given buffer cannot be completely written.
  */
-version (none)
-@property auto byRecord(T, Stream)(Stream s)
-    if (isSource!Stream)
+size_t writeExactly(Sink)(Sink sink, in void[] buf)
 {
-    struct ByRecord
+    auto bytesWritten = sink.write(buf);
+    if (bytesWritten != buf.length)
+        throw new WriteException("Failed to write entire buffer");
+
+    return bytesWritten;
+}
+
+/**
+ * Copies a single block from the source to the sink. The number of bytes copied
+ * is returned.
+ */
+private size_t copyBlock(Source, Sink)(Source source, Sink sink, ubyte[] buf)
+    if (isSource!Source && isSink!Sink)
+{
+    size_t bytesRead = source.read(buf);
+    size_t bytesWritten = sink.write(buf[0 .. bytesRead]);
+    copied += bytesWritten;
+    if (bytesWritten != bytesRead)
     {
+        // Uh oh. We read data that we failed to write. The source is now
+        // in an incorrect position. Seek back to the correct position if we
+        // can. Otherwise, throw an exception.
+        static if (isSeekable!Source)
+        {
+            source.skip(bytesWritten - bytesRead);
+        }
+        else
+        {
+            throw new WriteException(
+                "Failed to fully copy data from the source stream to the sink "
+                "stream. (The current read offset in the source is greater "
+                "than the number of bytes copied to the sink.)"
+                );
+        }
     }
 
-    return ByRecord();
+    return bytesWritten;
 }
+
+unittest
+{
+    // TODO
+}
+
+/**
+ * Copies the rest of the source stream to the sink, up to the given number of
+ * bytes. The positions of both streams are advanced according to how much is
+ * copied. The number of copied bytes is returned.
+ */
+size_t copyTo(Source, Sink)(Source source, Sink sink, ubyte[] buf, size_t n = size_t.max/2-1)
+    if (isSource!Source && isSink!Sink)
+{
+    size_t total;
+    size_t copied;
+
+    // Maximum number of blocks to write.
+    size_t blocks = n / buf.length;
+
+    for (size_t i = 0; i < blocks; i++)
+    {
+        copied = source.copyBlock(sink, buf);
+        total += copied;
+        if (copied < buf.length)
+            return total;
+    }
+
+    // Copy what is left-over.
+    total += source.copyBlock(sink, buf[0 .. n % buf.length]);
+
+    return total;
+}
+
+/// Ditto
+size_t copyTo(Source, Sink, size_t BufSize = 4096)
+    (Source source, Sink sink, size_t n = size_t.max/2-1)
+    if (isSource!Source && isSink!Sink)
+{
+    ubyte[BufSize] buffer;
+    return source.copyTo(sink, n);
+}
+
+unittest
+{
+    // TODO
+}
+
+version (none):
 
 /**
  * Copy the entirety of $(D source) to $(D sink). If $(D sink) could not take

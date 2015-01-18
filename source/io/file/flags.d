@@ -14,8 +14,8 @@ enum Mode
     none = 0,
 
     /**
-      Opens an existing file. Unless combined with create, fails if the file
-      does not exist.
+     * Opens an existing file. Unless combined with create, fails if the file
+     * does not exist.
      */
     open = 1 << 0,
 
@@ -101,8 +101,8 @@ struct FileFlags
     static immutable
     {
         /**
-         * An existing file is opened with read access. This is the most
-         * commonly used configuration.
+         * An existing file is opened with read access. This is likely the most
+         * commonly used set of flags.
          */
         FileFlags readExisting = FileFlags(Mode.open, Access.read);
 
@@ -240,14 +240,14 @@ struct FileFlags
      *
      * It is not advisable to use fopen-style mode strings. It is better to use
      * one of the predefined file flag configurations such as $(D
-     * FileFlags.readExisting) for greater readability.
+     * FileFlags.readExisting) for greater readability and intent of meaning.
      */
     static FileFlags parse(string s) pure
     {
         import std.range : front, popFront, empty;
 
         if (s.empty)
-            throw new Exception("mode string is empty");
+            throw new Exception("Expected non-empty mode string");
 
         FileFlags flags = void;
         flags.share = Share.init;
@@ -267,7 +267,7 @@ struct FileFlags
                 flags.mode   = Mode.create | Mode.append;
                 break;
             default:
-                throw new Exception("invalid mode string");
+                throw new Exception("Expected 'r', 'w', or 'a' in mode string");
         }
 
         s.popFront();
@@ -288,14 +288,14 @@ struct FileFlags
                     flags.access = Access.readWrite;
                     break;
                 default:
-                    throw new Exception("invalid mode string");
+                    throw new Exception("Expected 'b' or '+' in mode string");
             }
 
             s.popFront();
         }
 
         if (!s.empty)
-            throw new Exception("extraneous characters in mode string");
+            throw new Exception("Expected end of mode string");
 
         return flags;
     }
@@ -365,7 +365,7 @@ struct FileFlags
         return flags;
     }
 
-    else version (Windows)
+    version (Windows)
     @property auto windowsFlags() const pure nothrow
     {
         import core.sys.windows.windows;

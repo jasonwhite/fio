@@ -13,8 +13,7 @@ struct Pipe
     File writeEnd; // Write end
 
     /**
-     * Automatically forward reads and writes to the appropriate ends of the
-     * pipe.
+     * Forwards reads and writes to the appropriate ends of the pipe.
      */
     size_t read(void[] buf)
     {
@@ -29,8 +28,8 @@ struct Pipe
 }
 
 /**
- * Creates an unnamed unidirectional pipe that can be written to on one end
- * and read from on the other.
+ * Creates an unnamed, unidirectional pipe that can be written to on one end and
+ * read from on the other.
  */
 Pipe pipe()
 {

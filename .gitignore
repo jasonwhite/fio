@@ -3,3 +3,4 @@
 *.o
 /io
 .dub/*
+docs.json
