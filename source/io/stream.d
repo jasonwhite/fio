@@ -116,7 +116,6 @@ unittest
     static assert(!isSeekable!C);
 }
 
-
 /**
  * Set the position (in bytes) of a stream. The stream must be seekable.
  *
@@ -143,7 +142,7 @@ unittest
 }
 
 /**
- * Skip the specified number of bytes forward or backwards. The stream must be
+ * Skip the specified number of bytes forward or backward. The stream must be
  * seekable.
  */
 auto skip(Stream, Offset)(auto ref Stream stream, Offset offset)
@@ -209,11 +208,12 @@ unittest
  *
  * Throws: ReadException if the given buffer cannot be completely filled.
  */
-size_t readExactly(Source)(Source source, void[] buf)
+auto readExactly(Source)(auto ref Source source, void[] buf)
+    if (isSource!Source)
 {
-    auto bytesRead = source.read(buf);
+    immutable bytesRead = source.read(buf);
     if (bytesRead != buf.length)
-        throw new ReadException("Failed to fill entire buffer with read");
+        throw new ReadException("Failed to fill entire buffer from stream");
 
     return bytesRead;
 }
@@ -224,11 +224,12 @@ size_t readExactly(Source)(Source source, void[] buf)
  *
  * Throws: WriteException if the given buffer cannot be completely written.
  */
-size_t writeExactly(Sink)(Sink sink, in void[] buf)
+auto writeExactly(Sink)(auto ref Sink sink, in void[] buf)
+    if (isSink!Sink)
 {
-    auto bytesWritten = sink.write(buf);
+    immutable bytesWritten = sink.write(buf);
     if (bytesWritten != buf.length)
-        throw new WriteException("Failed to write entire buffer");
+        throw new WriteException("Failed to write entire buffer to stream");
 
     return bytesWritten;
 }
@@ -237,7 +238,8 @@ size_t writeExactly(Sink)(Sink sink, in void[] buf)
  * Copies a single block from the source to the sink. The number of bytes copied
  * is returned.
  */
-private size_t copyBlock(Source, Sink)(Source source, Sink sink, ubyte[] buf)
+private size_t copyBlock(Source, Sink)
+    (auto ref Source source, auto ref Sink sink, ubyte[] buf)
     if (isSource!Source && isSink!Sink)
 {
     size_t bytesRead = source.read(buf);
@@ -275,7 +277,8 @@ unittest
  * bytes. The positions of both streams are advanced according to how much is
  * copied. The number of copied bytes is returned.
  */
-size_t copyTo(Source, Sink)(Source source, Sink sink, ubyte[] buf, size_t n = size_t.max/2-1)
+size_t copyTo(Source, Sink)(auto ref Source source, auto ref Sink sink,
+        ubyte[] buf, size_t n = size_t.max/2-1)
     if (isSource!Source && isSink!Sink)
 {
     size_t total;
@@ -300,7 +303,7 @@ size_t copyTo(Source, Sink)(Source source, Sink sink, ubyte[] buf, size_t n = si
 
 /// Ditto
 size_t copyTo(Source, Sink, size_t BufSize = 4096)
-    (Source source, Sink sink, size_t n = size_t.max/2-1)
+    (auto ref Source source, auto ref Sink sink, size_t n = size_t.max/2-1)
     if (isSource!Source && isSink!Sink)
 {
     ubyte[BufSize] buffer;
@@ -310,58 +313,4 @@ size_t copyTo(Source, Sink, size_t BufSize = 4096)
 unittest
 {
     // TODO
-}
-
-version (none):
-
-/**
- * Copy the entirety of $(D source) to $(D sink). If $(D sink) could not take
- * everything from $(D source), an exception is thrown.
- */
-size_t copy(Source, Sink)(Source source, Sink sink, ubyte[] buf)
-    if (isSource!Source && isSink!Sink)
-{
-    size_t len;
-
-    while (true)
-    {
-        auto read = source.readData(buf);
-        if (read.length != buf.length) break;
-        sink.writeExactly(read);
-        len += read.length;
-    }
-
-    return len;
-}
-
-/// Ditto
-size_t copy(Source, Sink)(Source source, Sink sink)
-    if (isSource!Source && isSink!Sink)
-{
-    ubyte[1024] buf;
-    return copy(source, sink, buf);
-}
-
-/**
- * Copies the first n bytes of the stream $(D source) to the stream $(D sink).
- * If the sink stream could not take everything from the source stream, an
- * exception is thrown.
- */
-void copy(Source, Sink)(Source source, Sink sink, size_t n, ubyte[] buf)
-    if (isSource!Source && isSink!Sink)
-{
-    while (n > 0)
-    {
-        n -= sink.writeExactly(
-            source.readExactly(buf[0 .. (n < buf.length ? n : $)])
-            );
-    }
-}
-
-/// Ditto
-void copy(Source, Sink)(Source source, Sink sink, size_t n)
-    if (isSource!Source && isSink!Sink)
-{
-    ubyte[1024] buf;
-    copy(source, sink, n, buf);
 }
