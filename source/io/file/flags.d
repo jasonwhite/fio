@@ -90,14 +90,16 @@ enum Share
 
 /**
  * File flags determine how a file stream is created and used.
+ *
+ * TODO: Store native file flags instead.
  */
 struct FileFlags
 {
-    Mode mode;
-    Access access;
-    Share share;
-
-    /// Typical file flag configurations:
+    /**
+     * Typical file flag configurations. These are converted to the underlying
+     * platform-specific file flags at compile-time. Thus, there is zero
+     * overhead to using these pre-defined file flags.
+     */
     static immutable
     {
         /**
@@ -130,7 +132,7 @@ struct FileFlags
         /**
          * An existing file is opened with read/write access.
          */
-        FileFlags readWriteExisting = readExisting | writeExisting;
+        FileFlags readWriteExisting = FileFlags(Mode.open, Access.readWrite);
 
         /**
          * A new file is created with read/write access.
@@ -140,25 +142,107 @@ struct FileFlags
         /**
          * A new file is either opened or created with read/write access.
          */
-        FileFlags readWriteAlways = readExisting | writeNew;
+        FileFlags readWriteAlways = FileFlags(Mode.openOrCreate, Access.readWrite);
 
         /**
          * A new file is either opened or created, truncated if necessary, with
          * read/write access. This ensures that an $(I empty) file is opened.
          */
-        FileFlags readWriteEmpty = writeEmpty | Access.readWrite;
+        FileFlags readWriteEmpty = FileFlags(Mode.openOrCreate | Mode.truncate, Access.readWrite);
     }
 
-    /**
-     * Explicitly set the file mode.
-     */
-    this(Mode mode = Mode.init,
-         Access access = Access.init,
-         Share share = Share.init) pure nothrow
+    version (Posix)
     {
-        this.mode = mode;
-        this.access = access;
-        this.share = share;
+        import core.sys.posix.fcntl;
+
+        int flags;
+
+        this(Mode mode = Mode.init,
+             Access access = Access.init,
+             Share share = Share.init) pure nothrow
+        {
+            // Disable buffering. Buffering is handled by $(D io.buffered).
+            //flags |= O_DIRECT; // FIXME: O_DIRECT is not defined
+
+            if ((mode & Mode.openOrCreate) == Mode.openOrCreate)
+                flags |= O_CREAT;
+            else if (mode & Mode.create)
+                flags |= O_EXCL | O_CREAT;
+            // Mode.open by default
+
+            if (mode & Mode.truncate)
+                flags |= O_TRUNC;
+
+            if (mode & Mode.append)
+                flags |= O_APPEND;
+
+            if (access == Access.readWrite)
+                flags |= O_RDWR;
+            else if (access & Access.read)
+                flags |= O_RDONLY;
+            else if (access & Access.write)
+                flags |= O_WRONLY;
+
+            // Share flags are unused.
+        }
+
+        unittest
+        {
+            with (FileFlags)
+            {
+                static assert(readExisting.flags      == O_RDONLY);
+                static assert(writeExisting.flags     == O_WRONLY);
+                static assert(writeNew.flags          == (O_EXCL | O_CREAT | O_WRONLY));
+                static assert(writeAlways.flags       == (O_CREAT | O_WRONLY));
+                static assert(writeEmpty.flags        == (O_CREAT | O_TRUNC | O_WRONLY));
+                static assert(readWriteExisting.flags == O_RDWR);
+                static assert(readWriteNew.flags      == (O_CREAT | O_EXCL | O_RDWR));
+                static assert(readWriteAlways.flags   == (O_CREAT | O_RDWR));
+                static assert(readWriteEmpty.flags    == (O_CREAT | O_RDWR | O_TRUNC));
+            }
+        }
+    }
+    else version (Windows)
+    {
+        import core.sys.windows.windows;
+
+        DWORD access, share, mode;
+
+        this(Mode mode = Mode.init,
+             Access access = Access.init,
+             Share share = Share.init) pure nothrow
+        {
+            // Access flags
+            if (access & Access.read)
+                this.access |= GENERIC_READ;
+            if (access & Access.write)
+                this.access |= GENERIC_WRITE;
+            if (mode & Mode.append)
+                this.access |= FILE_APPEND_DATA;
+
+            // Share flags
+            if (share & Share.read)
+                this.share |= FILE_SHARE_READ;
+            if (share & Share.write)
+                this.share |= FILE_SHARE_WRITE;
+            if (share & Share.remove)
+                this.share |= FILE_SHARE_DELETE;
+
+            // Creation flags
+            if (mode & Mode.truncate)
+            {
+                if (mode & Mode.create)
+                    this.mode = CREATE_ALWAYS;
+                else
+                    this.mode = TRUNCATE_EXISTING;
+            }
+            else if ((mode & Mode.openOrCreate) == Mode.openOrCreate)
+                this.mode = OPEN_ALWAYS;
+            else if (mode & Mode.open)
+                this.mode = OPEN_EXISTING;
+            else if (mode & Mode.create)
+                this.mode = CREATE_NEW;
+        }
     }
 
     /**
@@ -186,57 +270,7 @@ struct FileFlags
     }
 
     /**
-     * Combine file flags.
-     */
-    FileFlags opBinary(string op, T)(const T rhs) const pure nothrow
-        if (op == "|" && (
-            is(T : const FileFlags) || is(T : const Mode) ||
-            is(T : const Access) || is(T : const Share)
-            ))
-    {
-        FileFlags ff = this;
-        ff |= rhs;
-        return ff;
-    }
-
-    /// Ditto
-    void opOpAssign(string op, T)(const T rhs) pure nothrow
-        if (op == "|" && (
-            is(T : const FileFlags) || is(T : const Mode) ||
-            is(T : const Access) || is(T : const Share)
-            ))
-    {
-        static if (is(T : const FileFlags))
-        {
-            mode   |= rhs.mode;
-            access |= rhs.access;
-            share  |= rhs.share;
-        }
-        else static if (is(T : const Mode))
-            mode   |= rhs;
-        else static if (is(T : const Access))
-            access |= rhs;
-        else static if (is(T : const Share))
-            share  |= rhs;
-    }
-
-    ///
-    unittest
-    {
-        static assert(
-            (FileFlags(Mode.open, Access.read) |
-            FileFlags(Mode.create, Access.write)) ==
-            FileFlags(Mode.openOrCreate, Access.readWrite)
-            );
-
-        static assert(
-            (FileFlags(Mode.open) | Access.read) ==
-            FileFlags(Mode.open, Access.read)
-            );
-    }
-
-    /**
-     * Parses an fopen-style mode string such as "rb+".
+     * Parses an fopen-style mode string such as "r+".
      *
      * It is not advisable to use fopen-style mode strings. It is better to use
      * one of the predefined file flag configurations such as $(D
@@ -249,22 +283,23 @@ struct FileFlags
         if (s.empty)
             throw new Exception("Expected non-empty mode string");
 
-        FileFlags flags = void;
-        flags.share = Share.init;
+        Mode mode;
+        Access access;
+        Share share;
 
         switch (s.front)
         {
             case 'r':
-                flags.access = Access.read;
-                flags.mode   = Mode.open;
+                access = Access.read;
+                mode   = Mode.open;
                 break;
             case 'w':
-                flags.access = Access.write;
-                flags.mode   = Mode.openOrCreate | Mode.truncate;
+                access = Access.write;
+                mode   = Mode.openOrCreate | Mode.truncate;
                 break;
             case 'a':
-                flags.access = Access.write;
-                flags.mode   = Mode.create | Mode.append;
+                access = Access.write;
+                mode   = Mode.create | Mode.append;
                 break;
             default:
                 throw new Exception("Expected 'r', 'w', or 'a' in mode string");
@@ -277,7 +312,7 @@ struct FileFlags
         // instead.
         foreach (i; 0 .. 2)
         {
-            if (s.empty) return flags;
+            if (s.empty) return FileFlags(mode, access, share);
 
             switch (s.front)
             {
@@ -285,7 +320,7 @@ struct FileFlags
                     // Ignored
                     break;
                 case '+':
-                    flags.access = Access.readWrite;
+                    access = Access.readWrite;
                     break;
                 default:
                     throw new Exception("Expected 'b' or '+' in mode string");
@@ -297,30 +332,30 @@ struct FileFlags
         if (!s.empty)
             throw new Exception("Expected end of mode string");
 
-        return flags;
+        return FileFlags(mode, access, share);
     }
 
     ///
     unittest
     {
-        assert(FileFlags("r") == FileFlags.readExisting);
-        assert(FileFlags("w") == FileFlags.writeEmpty);
-        assert(FileFlags("a") == (FileFlags.writeNew | Mode.append));
+        static assert(FileFlags("r") == FileFlags.readExisting);
+        static assert(FileFlags("w") == FileFlags.writeEmpty);
+        static assert(FileFlags("a") == FileFlags(Mode.create | Mode.append, Access.write));
 
-        assert(FileFlags("r+") == FileFlags.readWriteExisting);
-        assert(FileFlags("w+") == FileFlags.readWriteEmpty);
-        assert(FileFlags("a+") == (FileFlags.readWriteNew | Mode.append));
+        static assert(FileFlags("r+") == FileFlags.readWriteExisting);
+        static assert(FileFlags("w+") == FileFlags.readWriteEmpty);
+        static assert(FileFlags("a+") == FileFlags(Mode.create | Mode.append, Access.readWrite));
     }
 
     unittest
     {
         // Equivalent modes
-        assert(FileFlags("w+") == FileFlags("wb+"));
-        assert(FileFlags("r+") == FileFlags("rb+"));
-        assert(FileFlags("a+") == FileFlags("ab+"));
-        assert(FileFlags("w+b") == FileFlags("wb+"));
-        assert(FileFlags("r+b") == FileFlags("rb+"));
-        assert(FileFlags("a+b") == FileFlags("ab+"));
+        static assert(FileFlags("w+") == FileFlags("wb+"));
+        static assert(FileFlags("r+") == FileFlags("rb+"));
+        static assert(FileFlags("a+") == FileFlags("ab+"));
+        static assert(FileFlags("w+b") == FileFlags("wb+"));
+        static assert(FileFlags("r+b") == FileFlags("rb+"));
+        static assert(FileFlags("a+b") == FileFlags("ab+"));
     }
 
     unittest
@@ -330,86 +365,5 @@ struct FileFlags
         immutable badModes = ["", "rw", "asdf", "+r", "b+", " r", "r+b "];
         foreach (m; badModes)
             assert(collectException(FileFlags(m)));
-    }
-
-    // Platform specific file flags.
-    version (Posix)
-    package @property int posixFlags() const pure nothrow
-    {
-        import core.sys.posix.fcntl;
-
-        int flags = 0;
-
-        // Disable buffering. Buffering is handled by $(D io.buffered).
-        //flags |= O_DIRECT; // FIXME: O_DIRECT is not defined
-
-        if ((mode & Mode.openOrCreate) == Mode.openOrCreate)
-            flags |= O_CREAT;
-        else if (mode & Mode.create)
-            flags |= O_EXCL | O_CREAT;
-        // Mode.open by default
-
-        if (mode & Mode.truncate)
-            flags |= O_TRUNC;
-
-        if (mode & Mode.append)
-            flags |= O_APPEND;
-
-        if (access == Access.readWrite)
-            flags |= O_RDWR;
-        else if (access & Access.read)
-            flags |= O_RDONLY;
-        else if (access & Access.write)
-            flags |= O_WRONLY;
-
-        return flags;
-    }
-
-    version (Windows)
-    @property auto windowsFlags() const pure nothrow
-    {
-        import core.sys.windows.windows;
-
-        struct WindowsFlags
-        {
-            DWORD access;
-            DWORD share;
-            DWORD mode;
-        }
-
-        WindowsFlags flags;
-
-        // Access flags
-        if (access & Access.read)
-            flags.access |= GENERIC_READ;
-        if (access & Access.write)
-            flags.access |= GENERIC_WRITE;
-        if (mode & Mode.append)
-            flags.access |= FILE_APPEND_DATA;
-
-        // Sharing flags
-        if (share & Share.read)
-            flags.share |= FILE_SHARE_READ;
-        if (share & Share.write)
-            flags.share |= FILE_SHARE_WRITE;
-        if (share & Share.remove)
-            flags.share |= FILE_SHARE_DELETE;
-
-        // Creation flags
-        if (mode & Mode.truncate)
-        {
-            if (mode & Mode.create)
-                flags.mode = CREATE_ALWAYS;
-            else
-                flags.mode = TRUNCATE_EXISTING;
-        }
-        else if ((mode & Mode.openOrCreate) == Mode.openOrCreate)
-            flags.mode = OPEN_ALWAYS;
-        else if (mode & Mode.open)
-            flags.mode = OPEN_EXISTING;
-        else if (mode & Mode.create)
-            flags.mode = CREATE_NEW;
-
-        return flags;
     }
 }

@@ -185,24 +185,21 @@ struct File
         {
             import std.string : toStringz;
 
-            _h = .open(toStringz(name), flags.posixFlags, 0b110_110_110);
+            _h = .open(toStringz(name), flags.flags, 0b110_000_000);
         }
         else version (Windows)
         {
             import std.utf : toUTF16z;
 
-            with (flags.windowsFlags)
-            {
-                _h = .CreateFileW(
-                    name.toUTF16z(),       // File name
-                    access,                // Desired access
-                    share,                 // Share mode
-                    null,                  // Security attributes
-                    mode,                  // Creation disposition
-                    FILE_ATTRIBUTE_NORMAL, // Flags and attributes
-                    null,                  // Template file handle
-                    );
-            }
+            _h = .CreateFileW(
+                name.toUTF16z(),       // File name
+                flags.access,          // Desired access
+                flags.share,           // Share mode
+                null,                  // Security attributes
+                flags.mode,            // Creation disposition
+                FILE_ATTRIBUTE_NORMAL, // Flags and attributes
+                null,                  // Template file handle
+                );
         }
 
         sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name ~"'");
@@ -465,8 +462,7 @@ struct File
         assert(f.seekTo(-5, From.end) == data.length - 5);
 
         // Test large offset
-        Position p = cast(Offset)int.max * 2;
-        assert(f.seekTo(p) == p);
+        assert(f.seekTo(Offset.max) == Offset.max);
     }
 
     /**
@@ -542,17 +538,17 @@ struct File
         auto tf = testFile();
         auto f = File(tf.name, FileFlags.writeEmpty);
         assert(f.length == 0);
-        assert(f.position == File.start);
+        assert(f.position == 0);
 
         // Extend
         f.length = 100;
         assert(f.length == 100);
-        assert(f.position == File.start);
+        assert(f.position == 0);
 
         // Truncate
         f.length = 0;
         assert(f.length == 0);
-        assert(f.position == File.start);
+        assert(f.position == 0);
     }
 
     /**
