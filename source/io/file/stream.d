@@ -85,7 +85,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 /**
  * A light-weight, cross-platform wrapper around low-level file operations.
  */
-struct File
+final class File
 {
     // Platform-specific file handle
     version (Posix)
@@ -102,64 +102,11 @@ struct File
     private Handle _h = InvalidHandle;
 
     /**
-     * When a $(D File) is copied, the internal file handle is duplicated.
+     * Allows creating a file without using new.
      */
-    this(this)
+    static typeof(this) opCall(T...)(T args)
     {
-        if (!isOpen)
-            return;
-
-        version (Posix)
-        {
-            _h = .dup(_h);
-            sysEnforce(_h != InvalidHandle, "Failed to duplicate handle");
-        }
-        else version (Windows)
-        {
-            auto proc = GetCurrentProcess();
-            auto ret = DuplicateHandle(
-                proc, // Process with the file handle
-                _h,   // Handle to duplicate
-                proc, // Process for the duplicated handle
-                &_h,  // The duplicated handle
-                0,    // Access flags, ignored
-                true, // Allow this handle to be inherited
-                DUPLICATE_SAME_ACCESS
-            );
-            sysEnforce(ret, "Failed to duplicate handle");
-        }
-    }
-
-    unittest
-    {
-        auto tf = testFile();
-
-        auto a = File(tf.name, FileFlags.writeEmpty);
-
-        {
-            auto b = a; // Copy
-            b.write("abcd");
-        }
-
-        assert(a.position == 4);
-    }
-
-    unittest
-    {
-        // File is copied when passed to the function.
-        static void foo(File f)
-        {
-            f.write("abcd");
-        }
-
-        auto tf = testFile();
-        auto f = File(tf.name, FileFlags.writeEmpty);
-
-        assert(f.position == 0);
-
-        foo(f);
-
-        assert(f.position == 4);
+        return new typeof(this)(args);
     }
 
     /**
@@ -179,7 +126,13 @@ struct File
      * f.write("Hello world!");
      * ---
      */
-    this(string name, in FileFlags flags = FileFlags.readExisting)
+    this(string name, FileFlags flags = FileFlags.readExisting)
+    {
+        open(name, flags);
+    }
+
+    /// Ditto
+    void open(string name, FileFlags flags = FileFlags.readExisting)
     {
         version (Posix)
         {
@@ -257,15 +210,81 @@ struct File
      */
     this(Handle h)
     {
+        open(h);
+    }
+
+    /// Ditto
+    void open(Handle h)
+    {
         _h = h;
+    }
+
+    /**
+     * Duplicate the internal file handle.
+     */
+    typeof(this) dup()
+    in { assert(isOpen); }
+    body
+    {
+        version (Posix)
+        {
+            immutable h = .dup(_h);
+            sysEnforce(h != InvalidHandle, "Failed to duplicate handle");
+            return new File(h);
+        }
+        else version (Windows)
+        {
+            auto proc = GetCurrentProcess();
+            auto ret = DuplicateHandle(
+                proc, // Process with the file handle
+                _h,   // Handle to duplicate
+                proc, // Process for the duplicated handle
+                &_h,  // The duplicated handle
+                0,    // Access flags, ignored
+                true, // Allow this handle to be inherited
+                DUPLICATE_SAME_ACCESS
+            );
+            sysEnforce(ret, "Failed to duplicate handle");
+            return File(ret);
+        }
+    }
+
+    unittest
+    {
+        auto tf = testFile();
+
+        auto a = File(tf.name, FileFlags.writeEmpty);
+
+        auto b = a.dup; // Copy
+        b.write("abcd");
+
+        assert(a.position == 4);
+    }
+
+    unittest
+    {
+        // File is copied when passed to the function.
+        static void foo(File f)
+        {
+            f.write("abcd");
+        }
+
+        auto tf = testFile();
+        auto f = File(tf.name, FileFlags.writeEmpty);
+
+        assert(f.position == 0);
+
+        foo(f);
+
+        assert(f.position == 4);
     }
 
     /**
      * Closes the file stream.
      */
-    ~this()
+    void close()
     {
-        // Never opened. This happens with default construction.
+        // Not opened.
         if (!isOpen) return;
 
         version (Posix)
@@ -276,6 +295,14 @@ struct File
         {
             sysEnforce(CloseHandle(_h), "Failed to close file");
         }
+
+        _h = InvalidHandle;
+    }
+
+    /// Ditto
+    ~this()
+    {
+        close();
     }
 
     /**
@@ -287,19 +314,20 @@ struct File
     }
 
     /// Ditto
-    alias opCast(T : bool) = isOpen;
+    //alias opCast(T : bool) = isOpen;
 
     unittest
     {
         auto tf = testFile();
 
-        File f;
-        assert(!f.isOpen);
-        assert(!f);
+        //File f = File();
+        //assert(!f.isOpen);
+        //assert(!f);
 
-        f = File(tf.name, FileFlags.writeAlways);
+        auto f = File(tf.name, FileFlags.writeAlways);
         assert(f.isOpen);
-        assert(f);
+        f.close();
+        assert(!f.isOpen);
     }
 
     /**
