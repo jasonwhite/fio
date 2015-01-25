@@ -306,7 +306,7 @@ struct File
      * Returns the internal file handle. On POSIX, this is a file descriptor. On
      * Windows, this is an object handle.
      */
-    @property typeof(_h) handle() pure nothrow
+    @property Handle handle() pure nothrow
     {
         return _h;
     }
@@ -441,7 +441,7 @@ struct File
                 case From.end:   whence = FILE_END;     break;
             }
 
-            long pos = void;
+            Offset pos = void;
             sysEnforce(SetFilePointerEx(_h, offset, &pos, whence),
                 "Failed to seek to position");
             return pos;
@@ -468,7 +468,7 @@ struct File
     /**
      * Gets the size of the file.
      */
-    @property Position length()
+    @property Offset length()
     in { assert(isOpen); }
     body
     {
@@ -509,14 +509,14 @@ struct File
      * length of the file. If the file is extended, the new segment is not
      * guaranteed to be initialized to zeros.
      */
-    @property void length(Position len)
+    @property void length(Offset len)
     in { assert(isOpen); }
     body
     {
         version (Posix)
         {
             sysEnforce(
-                ftruncate(_h, cast(off_t)len) == 0,
+                ftruncate(_h, len) == 0,
                 "Failed to set the length of the file"
                 );
         }
@@ -587,15 +587,13 @@ struct File
     version (Posix)
     {
         private int lockImpl(int operation, short type,
-            Position start, Position length)
+            Offset start, Offset length)
         {
-            import std.conv : to;
-
             flock fl = {
                 l_type:   type,
                 l_whence: SEEK_SET,
-                l_start:  to!off_t(start),
-                l_len:    (length == File.end) ? 0 : to!off_t(length),
+                l_start:  start,
+                l_len:    (length == Offset.max) ? 0 : length,
                 l_pid:    -1,
             };
 
@@ -605,11 +603,13 @@ struct File
     else version (Windows)
     {
         private BOOL lockImpl(alias F, Flags...)(
-            Position start, Position length, Flags flags)
+            Offset start, Offset length, Flags flags)
         {
+            import std.conv : to;
+
             immutable ULARGE_INTEGER
-                liStart = {QuadPart: start},
-                liLength = {QuadPart: length};
+                liStart = {QuadPart: start.to!ulong},
+                liLength = {QuadPart: length.to!ulong};
 
             OVERLAPPED overlapped = {
                 Offset: liStart.LowPart,
@@ -630,7 +630,7 @@ struct File
      * not be used for thread-level synchronization.
      */
     void lock(LockType lockType = LockType.readWrite,
-        Position start = this.start, Position length = this.end)
+        Offset start = 0, Offset length = Offset.max)
     in { assert(isOpen); }
     body
     {
@@ -654,8 +654,13 @@ struct File
         }
     }
 
+    /**
+     * Like $(D lock), but returns false immediately if the lock is held by
+     * another process. Returns true if the specified region in the file was
+     * successfully locked.
+     */
     bool tryLock(LockType lockType = LockType.readWrite,
-        Position start = this.start, Position length = this.end)
+        Offset start = 0, Offset length = Offset.max)
     in { assert(isOpen); }
     body
     {
@@ -696,7 +701,7 @@ struct File
         }
     }
 
-    void unlock(Position start = this.start, Position length = this.end)
+    void unlock(Offset start = 0, Offset length = Offset.max)
     in { assert(isOpen); }
     body
     {
@@ -752,15 +757,16 @@ struct File
         }
     }
 
+
     /**
      * Copies the rest of this file to the other. The positions of both files
      * are appropriately incremented, as if one called read()/write() to copy
      * the file. The number of copied bytes is returned.
      */
     version (linux)
-    Position copyTo()(auto ref File other, size_t n = size_t.max/2-1)
+    size_t copyTo()(auto ref File other, size_t n = size_t.max/2-1)
     {
-        auto written = .sendfile(other._h, _h, null, n);
+        immutable written = .sendfile(other._h, _h, null, n);
         sysEnforce(written >= 0, "Failed to copy file.");
         return written;
     }
