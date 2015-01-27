@@ -33,13 +33,13 @@ enum Mode
     /**
      * Allows only appending to the end of the file. Seek operations only affect
      * subsequent reads. Upon writing, the file pointer gets set to the end of
-     * the file.
+     * the file. Requires write access to the file.
      */
     append = 1 << 2,
 
     /**
      * Truncates the file. This has no effect if the file has been created anew.
-     * Fails if the file is opened without write access.
+     * Requires write access to the file.
      */
     truncate = 1 << 3,
 }
@@ -90,15 +90,13 @@ enum Share
 
 /**
  * File flags determine how a file stream is created and used.
- *
- * TODO: Store native file flags instead.
  */
 struct FileFlags
 {
     /**
      * Typical file flag configurations. These are converted to the underlying
      * platform-specific file flags at compile-time. Thus, there is zero
-     * overhead to using these pre-defined file flags.
+     * run-time overhead to using these pre-defined file flags.
      */
     static immutable
     {
@@ -263,99 +261,75 @@ struct FileFlags
 
     unittest
     {
-        FileFlags ff;
-        ff = "w+";
+        FileFlags ff = "wb+";
         assert(ff == FileFlags.readWriteEmpty);
-        assert(ff == FileFlags("w+"));
+        assert(ff == FileFlags("wb+"));
     }
 
     /**
-     * Parses an fopen-style mode string such as "r+".
+     * Parses an fopen-style mode string such as "r+". The string should be
+     * accepted by the regular expression "(w(b|b+|+b)x?)|([ra](b|b+|+b))". That
+     * is, all possible mode strings include:
      *
-     * It is not advisable to use fopen-style mode strings. It is better to use
-     * one of the predefined file flag configurations such as $(D
+     *   wb    Write truncated                  rb   Read existing
+     *   wb+   Read/write truncated             rb+  Read/write existing
+     *   w+b   Read/write truncated             r+b  Read/write existing
+     *   wbx   Write new                        ab   Append new
+     *   wb+x  Read/write new                   ab+  Append/read new
+     *   w+bx  Read/write new                   a+b  Append/read new
+     *
+     * The mode strings accepted here differs from those accepted by fopen.
+     * Here, file streams are never opened in text mode -- only binary mode.
+     * Text handling functionality is built on top of low-level file streams.
+     * It does not make sense to distinguish between text and binary modes here.
+     * fopen opens all files in text mode by default and the flag 'b' must be
+     * specified in order to open in binary mode. Thus, an exception is thrown
+     * here if 'b' is omitted in the specified mode string.
+     *
+     * Note: It is not advisable to use fopen-style mode strings. It is better
+     * to use one of the predefined file flag configurations such as $(D
      * FileFlags.readExisting) for greater readability and intent of meaning.
      */
-    static FileFlags parse(string s) pure
+    static FileFlags parse(string mode) pure
     {
-        import std.range : front, popFront, empty;
-
-        if (s.empty)
-            throw new Exception("Expected non-empty mode string");
-
-        Mode mode;
-        Access access;
-        Share share;
-
-        switch (s.front)
+        // There are only 12 possible permutations of mode strings that we care
+        // about. (There would be twice as many if the 'b' flag was optional.)
+        // Thus, it is easier to just check for all 12 possible flags rather
+        // than actually parsing the string.
+        switch (mode)
         {
-            case 'r':
-                access = Access.read;
-                mode   = Mode.open;
-                break;
-            case 'w':
-                access = Access.write;
-                mode   = Mode.openOrCreate | Mode.truncate;
-                break;
-            case 'a':
-                access = Access.write;
-                mode   = Mode.create | Mode.append;
-                break;
+            case "wb":   return FileFlags.writeEmpty;
+            case "wb+":  return FileFlags.readWriteEmpty;
+            case "w+b":  return FileFlags.readWriteEmpty;
+            case "wbx":  return FileFlags.writeNew;
+            case "wb+x": return FileFlags.readWriteNew;
+            case "w+bx": return FileFlags.readWriteNew;
+            case "rb":   return FileFlags.readExisting;
+            case "rb+":  return FileFlags.readWriteExisting;
+            case "r+b":  return FileFlags.readWriteExisting;
+            case "ab":   return FileFlags(Mode.openOrCreate | Mode.append, Access.write);
+            case "ab+":  return FileFlags(Mode.openOrCreate | Mode.append, Access.readWrite);
+            case "a+b":  return FileFlags(Mode.openOrCreate | Mode.append, Access.readWrite);
             default:
-                throw new Exception("Expected 'r', 'w', or 'a' in mode string");
+                throw new Exception("Invalid mode string");
         }
-
-        s.popFront();
-
-        // Note that the binary flag is ignored. Here, file streams are always
-        // binary streams. Text functionality is accessed via $(D io.text)
-        // instead.
-        foreach (i; 0 .. 2)
-        {
-            if (s.empty) return FileFlags(mode, access, share);
-
-            switch (s.front)
-            {
-                case 'b':
-                    // Ignored
-                    break;
-                case '+':
-                    access = Access.readWrite;
-                    break;
-                default:
-                    throw new Exception("Expected 'b' or '+' in mode string");
-            }
-
-            s.popFront();
-        }
-
-        if (!s.empty)
-            throw new Exception("Expected end of mode string");
-
-        return FileFlags(mode, access, share);
     }
 
     ///
     unittest
     {
-        static assert(FileFlags("r") == FileFlags.readExisting);
-        static assert(FileFlags("w") == FileFlags.writeEmpty);
-        static assert(FileFlags("a") == FileFlags(Mode.create | Mode.append, Access.write));
-
-        static assert(FileFlags("r+") == FileFlags.readWriteExisting);
-        static assert(FileFlags("w+") == FileFlags.readWriteEmpty);
-        static assert(FileFlags("a+") == FileFlags(Mode.create | Mode.append, Access.readWrite));
-    }
-
-    unittest
-    {
-        // Equivalent modes
-        static assert(FileFlags("w+") == FileFlags("wb+"));
-        static assert(FileFlags("r+") == FileFlags("rb+"));
-        static assert(FileFlags("a+") == FileFlags("ab+"));
-        static assert(FileFlags("w+b") == FileFlags("wb+"));
-        static assert(FileFlags("r+b") == FileFlags("rb+"));
-        static assert(FileFlags("a+b") == FileFlags("ab+"));
+        static assert(FileFlags("wb")   == FileFlags.writeEmpty);
+        static assert(FileFlags("wb+")  == FileFlags.readWriteEmpty);
+        static assert(FileFlags("w+b")  == FileFlags.readWriteEmpty);
+        static assert(FileFlags("wbx")  == FileFlags.writeNew);
+        static assert(FileFlags("wb+x") == FileFlags.readWriteNew);
+        static assert(FileFlags("w+bx") == FileFlags.readWriteNew);
+        static assert(FileFlags("rb")   == FileFlags.readExisting);
+        static assert(FileFlags("rb+")  == FileFlags.readWriteExisting);
+        static assert(FileFlags("r+b")  == FileFlags.readWriteExisting);
+        static assert(FileFlags("ab")   == FileFlags(Mode.openOrCreate | Mode.append, Access.write));
+        static assert(FileFlags("ab+")  == FileFlags(Mode.openOrCreate | Mode.append, Access.readWrite));
+        static assert(FileFlags("a+b")  == FileFlags(Mode.openOrCreate | Mode.append, Access.readWrite));
     }
 
     unittest
