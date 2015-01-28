@@ -10,6 +10,16 @@ public import io.file.stream;
 version (Posix)
 {
     import core.sys.posix.sys.mman;
+
+    // Converts file access flags to POSIX protection flags.
+    private @property int protectionFlags(Access access) pure nothrow
+    {
+        int flags = PROT_NONE;
+        if (access & Access.read)    flags |= PROT_READ;
+        if (access & Access.write)   flags |= PROT_WRITE;
+        if (access & Access.execute) flags |= PROT_EXEC;
+        return flags;
+    }
 }
 else version (Windows)
 {
@@ -20,22 +30,12 @@ else
     static assert(false, "Not implemented on this platform.");
 }
 
-// Converts file access flags to POSIX protection flags.
-private @property int prot(Access access) pure nothrow
-{
-    int prot = PROT_NONE;
-    if (access & Access.read)    prot |= PROT_READ;
-    if (access & Access.write)   prot |= PROT_WRITE;
-    if (access & Access.execute) prot |= PROT_EXEC;
-    return prot;
-}
-
 /**
  * A memory mapped file. This essentially allows a file to be used as if it were
  * a slice of memory. For many use cases, it is a very efficient means of
  * accessing a file.
  */
-struct MemoryMap
+final class MemoryMap
 {
     // Memory mapped data.
     void[] data;
@@ -68,7 +68,7 @@ struct MemoryMap
      *
      * Throws: SysException
      */
-    this()(auto ref File file, Access access = Access.read, size_t length = 0,
+    this(File file, Access access = Access.read, size_t length = 0,
         File.Position start = 0, bool share = true, void* address = null)
     in { assert(file.isOpen); }
     body
@@ -86,12 +86,12 @@ struct MemoryMap
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 
             void *p = mmap(
-                address,         // Preferred address
-                length,          // Length of the memory map
-                access.prot,     // Protection flags
-                flags,           // Mapping flags
-                file.handle,     // File descriptor
-                cast(off_t)start // Offset within the file (must be page-aligned)
+                address,                // Preferred address
+                length,                 // Length of the memory map
+                access.protectionFlags, // Protection flags
+                flags,                  // Mapping flags
+                file.handle,            // File descriptor
+                cast(off_t)start        // Offset within the file (must be page-aligned)
                 );
 
             sysEnforce(p != MAP_FAILED, "Failed to map file to memory");
@@ -212,6 +212,16 @@ struct MemoryMap
     }
 }
 
+/**
+ * Convenience function for creating a memory map.
+ */
+MemoryMap memoryMap(File file, Access access = Access.read,
+        size_t length = 0, File.Position start = 0, bool share = true,
+        void* address = null)
+{
+    return new MemoryMap(file, access, length, start, share, address);
+}
+
 ///
 unittest
 {
@@ -224,7 +234,7 @@ unittest
         auto f = File(tf.name, FileFlags.readWriteEmpty);
         f.length = newData.length;
 
-        auto map = f.MemoryMap(Access.readWrite);
+        auto map = f.memoryMap(Access.readWrite);
         auto data = cast(char[])map;
 
         data[0 .. newData.length] = newData[];
@@ -234,7 +244,7 @@ unittest
 
     // Read the file back in
     {
-        auto map = File(tf.name, FileFlags.readExisting).MemoryMap();
+        auto map = File(tf.name, FileFlags.readExisting).memoryMap();
         auto data = cast(char[])map;
         assert(data[0 .. newData.length] == newData[]);
     }
@@ -248,5 +258,5 @@ unittest
 
     auto f = File(tf.name, FileFlags.readWriteEmpty);
     assert(f.length == 0);
-    assert(collectException!SysException(f.MemoryMap(Access.readWrite)));
+    assert(collectException!SysException(f.memoryMap(Access.readWrite)));
 }
