@@ -5,7 +5,7 @@
  */
 module io.stream;
 
-import io.traits;
+public import io.traits;
 
 /**
  * Stream exceptions.
@@ -31,21 +31,6 @@ interface Source
      * returned.
      */
     size_t read(void[] buf);
-
-    /**
-     * Reads exactly the number of bytes requested from the stream. Throws an
-     * exception if it cannot be done. Returns the number of bytes read.
-     *
-     * Throws: ReadException if the given buffer cannot be completely filled.
-     */
-    final size_t readExactly(void[] buf)
-    {
-        immutable bytesRead = read(buf);
-        if (bytesRead != buf.length)
-            throw new ReadException("Failed to fill entire buffer from stream");
-
-        return bytesRead;
-    }
 }
 
 /**
@@ -58,21 +43,6 @@ interface Sink
      * returned.
      */
     size_t write(in void[] data);
-
-    /**
-     * Writes exactly the given buffer and no less. Throws an exception if it cannot
-     * be done. Returns the number of bytes written.
-     *
-     * Throws: WriteException if the given buffer cannot be completely written.
-     */
-    final size_t writeExactly(in void[] buf)
-    {
-        immutable bytesWritten = write(buf);
-        if (bytesWritten != buf.length)
-            throw new WriteException("Failed to write entire buffer to stream");
-
-        return bytesWritten;
-    }
 }
 
 /**
@@ -90,33 +60,6 @@ interface Seekable
      *   from = The relative position to seek to.
      */
     Offset seekTo(Offset offset, From from = From.start);
-
-    /**
-     * Set the position (in bytes) of a stream.
-     *
-     * Params:
-     *   offset = The offset into the stream.
-     */
-    final @property void position(Offset offset)
-    {
-        seekTo(offset, From.start);
-    }
-
-    /**
-     * Get the position (in bytes) of a stream.
-     */
-    final @property Offset position()
-    {
-        return seekTo(0, From.here);
-    }
-
-    /**
-     * Skip the specified number of bytes forward or backward.
-     */
-    final Offset skip(Offset offset)
-    {
-        return seekTo(offset, From.here);
-    }
 }
 
 /**
@@ -167,6 +110,69 @@ unittest
 
     // Writing
     assert(s.write(buf) == buf.length);
+}
+
+
+/**
+ * Reads exactly the number of bytes requested from the stream. Throws an
+ * exception if it cannot be done. Returns the number of bytes read.
+ *
+ * Throws: ReadException if the given buffer cannot be completely filled.
+ */
+@property size_t readExactly(Stream)(Stream stream, void[] buf)
+    if (isSource!Stream)
+{
+    immutable bytesRead = read(buf);
+    if (bytesRead != buf.length)
+        throw new ReadException("Failed to fill entire buffer from stream");
+
+    return bytesRead;
+}
+
+/**
+ * Writes exactly the given buffer and no less. Throws an exception if it cannot
+ * be done. Returns the number of bytes written.
+ *
+ * Throws: WriteException if the given buffer cannot be completely written.
+ */
+@property size_t writeExactly(Stream)(Stream stream, in void[] buf)
+    if (isSink!Stream)
+{
+    immutable bytesWritten = stream.write(buf);
+    if (bytesWritten != buf.length)
+        throw new WriteException("Failed to write entire buffer to stream");
+
+    return bytesWritten;
+}
+
+/**
+ * Set the position (in bytes) of a stream.
+ *
+ * Params:
+ *   offset = The offset into the stream.
+ */
+@property void position(Stream, Offset)(Stream stream, Offset offset)
+    if (isSeekable!Stream)
+{
+    stream.seekTo(offset, From.start);
+}
+
+/**
+ * Get the position (in bytes) of a stream.
+ */
+@property auto position(Stream)(Stream stream)
+    if (isSeekable!Stream)
+{
+    return stream.seekTo(0, From.here);
+}
+
+/**
+ * Skip the specified number of bytes forward or backward.
+ */
+@property auto skip(Stream, Offset)(Stream stream, Offset offset)
+    if (isSeekable!Stream)
+{
+    return stream.seekTo(offset, From.here);
 }
 
 version (none):
