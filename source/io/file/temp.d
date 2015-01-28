@@ -25,7 +25,7 @@ private const(char*) tempDirImpl()
         return null;
     }
 
-    // TODO: Use secure_getenv instead if available?
+    // TODO: Use secure_getenv, if available, instead?
     if (auto path = getenv("TMPDIR")) return path;
     if (auto path = getenv("TEMP")) return path;
     if (auto path = getenv("TMP")) return path;
@@ -38,12 +38,12 @@ private const(char*) tempDirImpl()
 }
 
 version (Windows)
-private const(wchar[]) tempDirImpl()
+private wstring tempDirImpl()
 {
-    import core.sys.windows.windows : WCHAR, MAX_PATH, GetTempPathW;
+    import core.sys.windows.windows : MAX_PATH, GetTempPathW;
 
-    static WCHAR[MAX_PATH] buf;
-    DWORD len = GetTempPathW(buf.length, buf.ptr);
+    static wchar[MAX_PATH] buf;
+    immutable len = GetTempPathW(buf.length, buf.ptr);
     return buf[0 .. len];
 }
 
