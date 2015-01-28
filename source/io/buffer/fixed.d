@@ -8,7 +8,7 @@
  */
 module io.buffer.fixed;
 
-import io.traits;
+import io.stream;
 import io.buffer.traits;
 
 
@@ -207,7 +207,15 @@ class FixedBuffer(Stream, Access access = Access.all)
 /**
  * Convenience function to create a fixed-sized buffer.
  */
-@property auto fixedBuffer(Stream, Access access = Access.all)
+@property auto fixedBuffer(Stream)
+    (Stream stream, size_t bufSize = 8192)
+    if (isBufferable!(Stream))
+{
+    return new FixedBuffer!(Stream)(stream, bufSize);
+}
+
+/// Ditto
+@property auto fixedBuffer(Access access, Stream)
     (Stream stream, size_t bufSize = 8192)
     if (isBufferable!(Stream, access))
 {
@@ -218,5 +226,12 @@ unittest
 {
     import io.file.temp;
 
-    auto f = tempFile().fixedBuffer();
+    auto f = tempFile().fixedBuffer;
+
+    immutable data = "The quick brown fox jumps over the lazy dog.";
+    char buffer[data.length];
+    assert(f.write(data) == data.length);
+    f.position = 0;
+    assert(f.read(buffer) == buffer.length);
+    assert(buffer == data);
 }

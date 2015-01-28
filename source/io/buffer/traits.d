@@ -14,7 +14,7 @@ import io.traits;
  * writes must be buffered, the stream must also be seekable. There are no
  * exceptions to this last rule when buffering.
  */
-template isBufferable(Stream, Access mask = Access.read)
+template isBufferable(Stream, Access mask = Access.all)
 {
     static if ((mask & Access.readWrite) == Access.readWrite)
         static if (isSource!Stream && isSink!Stream)
