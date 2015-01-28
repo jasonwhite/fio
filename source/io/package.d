@@ -7,6 +7,5 @@
 
 public import io.stream,
               io.file,
-              io.buffered,
               io.text,
               io.stdio;
