@@ -3,9 +3,7 @@
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
-module io;
+module io.buffer;
 
-public import io.stream,
-              io.file,
-              io.text,
-              io.stdio;
+public import io.buffer.traits,
+              io.buffer.fixed;
