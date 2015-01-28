@@ -20,7 +20,7 @@ else
         auto f = tempFile();
         f.length = 1024^^3; // 1 GiB
 
-        auto map = f.MemoryMap(Access.readWrite);
+        auto map = f.memoryMap(Access.readWrite);
         auto data = cast(size_t[])map;
 
         foreach (i, ref e; parallel(data))
