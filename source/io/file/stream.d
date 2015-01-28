@@ -5,7 +5,7 @@
  */
 module io.file.stream;
 
-import io.stream;
+import io.traits, io.stream;
 public import io.file.flags;
 
 version (unittest)
@@ -85,7 +85,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 /**
  * A light-weight, cross-platform wrapper around low-level file operations.
  */
-final class File
+final class File : Source, Sink, Seekable
 {
     // Platform-specific file handle
     version (Posix)
@@ -138,7 +138,7 @@ final class File
         {
             import std.string : toStringz;
 
-            _h = .open(toStringz(name), flags.flags, 0b110_000_000);
+            _h = .open(toStringz(name), flags, 0b110_000_000);
         }
         else version (Windows)
         {
@@ -220,7 +220,7 @@ final class File
     }
 
     /**
-     * Duplicate the internal file handle.
+     * Duplicates the internal file handle.
      */
     typeof(this) dup()
     in { assert(isOpen); }
@@ -439,7 +439,7 @@ final class File
      *   offset = Offset relative to a reference point.
      *   from   = Optional reference point.
      */
-    ulong seekTo(Offset offset, From from = From.start)
+    Offset seekTo(Offset offset, From from = From.start)
     in { assert(isOpen); }
     body
     {
@@ -504,7 +504,7 @@ final class File
         {
             // Note that this uses stat to get the length of the file instead of
             // the seek method. This method is safer because it is atomic.
-            stat_t stat;
+            stat_t stat = void;
             sysEnforce(.fstat(_h, &stat) != -1);
             return stat.st_size;
         }
@@ -818,11 +818,6 @@ final class File
         assert(b.read(buf) == s.length);
         assert(buf == s);
     }
-
-    /* TODO: Add function to get disk sector size for the file. Use
-     * GetFileInformationByHandleEx with FileStorageInfo. See
-     * http://msdn.microsoft.com/en-us/library/windows/desktop/hh447302(v=vs.85).aspx
-     */
 }
 
 unittest
