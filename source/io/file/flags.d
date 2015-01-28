@@ -5,6 +5,8 @@
  */
 module io.file.flags;
 
+public import io.stream : Access;
+
 /**
  * Specifies in what mode a file should be opened.
  */
@@ -42,27 +44,6 @@ enum Mode
      * Requires write access to the file.
      */
     truncate = 1 << 3,
-}
-
-/**
- * Specifies how to access the file.
- */
-enum Access
-{
-    /// Default access. Not very useful.
-    none = 0,
-
-    /// Allows only read operations on the file.
-    read = 1 << 0,
-
-    /// Allows only write operations on the file.
-    write = 1 << 1,
-
-    /// Allows data to be executed. This is only used for memory mapped files.
-    execute = 1 << 2,
-
-    /// Allows both read and write operations on the file.
-    readWrite = read | write,
 }
 
 /**
@@ -155,6 +136,8 @@ struct FileFlags
 
         int flags;
 
+        alias flags this;
+
         this(Mode mode = Mode.init,
              Access access = Access.init,
              Share share = Share.init) pure nothrow
@@ -181,7 +164,7 @@ struct FileFlags
             else if (access & Access.write)
                 flags |= O_WRONLY;
 
-            // Share flags are unused.
+            // Posix does not support Share flags.
         }
 
         unittest
@@ -211,20 +194,14 @@ struct FileFlags
              Share share = Share.init) pure nothrow
         {
             // Access flags
-            if (access & Access.read)
-                this.access |= GENERIC_READ;
-            if (access & Access.write)
-                this.access |= GENERIC_WRITE;
-            if (mode & Mode.append)
-                this.access |= FILE_APPEND_DATA;
+            if (access & Access.read)  this.access |= GENERIC_READ;
+            if (access & Access.write) this.access |= GENERIC_WRITE;
+            if (mode & Mode.append)    this.access |= FILE_APPEND_DATA;
 
             // Share flags
-            if (share & Share.read)
-                this.share |= FILE_SHARE_READ;
-            if (share & Share.write)
-                this.share |= FILE_SHARE_WRITE;
-            if (share & Share.remove)
-                this.share |= FILE_SHARE_DELETE;
+            if (share & Share.read)   this.share |= FILE_SHARE_READ;
+            if (share & Share.write)  this.share |= FILE_SHARE_WRITE;
+            if (share & Share.remove) this.share |= FILE_SHARE_DELETE;
 
             // Creation flags
             if (mode & Mode.truncate)
