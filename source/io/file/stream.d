@@ -389,7 +389,7 @@ final class File : Source, Sink, Seekable
      *
      * Returns: The number of bytes that were written.
      */
-    size_t write(in void[] data)
+    size_t write(const(void)[] data)
     in { assert(isOpen); }
     body
     {

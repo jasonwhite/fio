@@ -42,7 +42,7 @@ interface Sink
      * Writes data to the stream. The number of bytes successfully written is
      * returned.
      */
-    size_t write(in void[] data);
+    size_t write(const(void)[] data);
 }
 
 /**
@@ -87,7 +87,7 @@ class NullStream : Source, Sink
     /**
      * Simply returns the length of the data array.
      */
-    size_t write(in void[] data)
+    size_t write(const(void)[] data)
     {
         return data.length;
     }
