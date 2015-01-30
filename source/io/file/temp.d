@@ -73,7 +73,8 @@ T tempDir(T = string)() @trusted
  * write access.
  */
 version (Posix)
-File tempFile(string dir = tempDir)
+F tempFile(F = File)(string dir = tempDir)
+    if (is(F == class))
 {
     /* Implementation note: Since Linux 3.11, there is the flag
      * O_TMPFILE which can be used to open a temporary file. This
@@ -97,12 +98,12 @@ File tempFile(string dir = tempDir)
     // file descriptors referring to it are closed.
     sysEnforce(unlink(path.ptr) == 0, "Failed to unlink temporary file");
 
-    return File(fd);
+    return new F(fd);
 }
 
 version (Windows)
-File tempFile(T)(T dir = tempDir!T)
-    if (is(T : string) || is(T : wstring))
+File tempFile(F = File, T)(T dir = tempDir!T)
+    if (is(F == class) && (is(T : string) || is(T : wstring)))
 {
     import core.sys.windows.windows;
     import std.conv : to;

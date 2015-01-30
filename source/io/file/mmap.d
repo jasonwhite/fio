@@ -70,8 +70,6 @@ final class MemoryMap
      */
     this(File file, Access access = Access.read, size_t length = 0,
         File.Position start = 0, bool share = true, void* address = null)
-    in { assert(file.isOpen); }
-    body
     {
         version (Posix)
         {

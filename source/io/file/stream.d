@@ -85,7 +85,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 /**
  * A light-weight, cross-platform wrapper around low-level file operations.
  */
-final class File : Source, Sink, Seekable
+class File : Source, Sink, Seekable
 {
     // Platform-specific file handle
     version (Posix)
@@ -103,6 +103,8 @@ final class File : Source, Sink, Seekable
 
     /**
      * Allows creating a file without using new.
+     *
+     * FIXME: This should be deprecated.
      */
     static typeof(this) opCall(T...)(T args)
     {
@@ -127,12 +129,6 @@ final class File : Source, Sink, Seekable
      * ---
      */
     this(string name, FileFlags flags = FileFlags.readExisting)
-    {
-        open(name, flags);
-    }
-
-    /// Ditto
-    void open(string name, FileFlags flags = FileFlags.readExisting)
     {
         version (Posix)
         {
@@ -210,12 +206,6 @@ final class File : Source, Sink, Seekable
      */
     this(Handle h)
     {
-        open(h);
-    }
-
-    /// Ditto
-    void open(Handle h)
-    {
         _h = h;
     }
 
@@ -223,8 +213,6 @@ final class File : Source, Sink, Seekable
      * Duplicates the internal file handle.
      */
     typeof(this) dup()
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -279,13 +267,10 @@ final class File : Source, Sink, Seekable
         assert(f.position == 4);
     }
 
-    /**
-     * Closes the file stream.
-     */
-    void close()
+    /// Ditto
+    ~this()
     {
-        // Not opened.
-        if (!isOpen) return;
+        if (_h == InvalidHandle) return;
 
         version (Posix)
         {
@@ -295,39 +280,6 @@ final class File : Source, Sink, Seekable
         {
             sysEnforce(CloseHandle(_h), "Failed to close file");
         }
-
-        _h = InvalidHandle;
-    }
-
-    /// Ditto
-    ~this()
-    {
-        close();
-    }
-
-    /**
-     * Returns true if the file is open.
-     */
-    @property bool isOpen() const pure nothrow
-    {
-        return _h != InvalidHandle;
-    }
-
-    /// Ditto
-    //alias opCast(T : bool) = isOpen;
-
-    unittest
-    {
-        auto tf = testFile();
-
-        //File f = File();
-        //assert(!f.isOpen);
-        //assert(!f);
-
-        auto f = File(tf.name, FileFlags.writeAlways);
-        assert(f.isOpen);
-        f.close();
-        assert(!f.isOpen);
     }
 
     /**
@@ -350,8 +302,6 @@ final class File : Source, Sink, Seekable
      * the file has been reached.
      */
     size_t read(void[] buf)
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -390,8 +340,6 @@ final class File : Source, Sink, Seekable
      * Returns: The number of bytes that were written.
      */
     size_t write(const(void)[] data)
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -440,8 +388,6 @@ final class File : Source, Sink, Seekable
      *   from   = Optional reference point.
      */
     Offset seekTo(Offset offset, From from = From.start)
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -497,8 +443,6 @@ final class File : Source, Sink, Seekable
      * Gets the size of the file.
      */
     @property Offset length()
-    in { assert(isOpen); }
-    body
     {
         version(Posix)
         {
@@ -538,8 +482,6 @@ final class File : Source, Sink, Seekable
      * guaranteed to be initialized to zeros.
      */
     @property void length(Offset len)
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -583,8 +525,6 @@ final class File : Source, Sink, Seekable
      * Checks if the file is a terminal.
      */
     @property bool isTerminal()
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -659,8 +599,6 @@ final class File : Source, Sink, Seekable
      */
     void lock(LockType lockType = LockType.readWrite,
         Offset start = 0, Offset length = Offset.max)
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -689,8 +627,6 @@ final class File : Source, Sink, Seekable
      */
     bool tryLock(LockType lockType = LockType.readWrite,
         Offset start = 0, Offset length = Offset.max)
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -730,8 +666,6 @@ final class File : Source, Sink, Seekable
     }
 
     void unlock(Offset start = 0, Offset length = Offset.max)
-    in { assert(isOpen); }
-    body
     {
         version (Posix)
         {
@@ -748,13 +682,11 @@ final class File : Source, Sink, Seekable
     }
 
     /**
-     * Flushes all modified cached data of the file to disk. This includes data
+     * Syncs all modified cached data of the file to disk. This includes data
      * written to the file as well as meta data (e.g., last modified time, last
      * access time).
      */
-    void flush()
-    in { assert(isOpen); }
-    body
+    void sync()
     {
         version (Posix)
         {
@@ -771,9 +703,7 @@ final class File : Source, Sink, Seekable
      *
      * NOTE: On Windows, this is exactly the same as $(D sync()).
      */
-    void flushData()
-    in { assert(isOpen); }
-    body
+    void syncData()
     {
         version (Posix)
         {
@@ -784,7 +714,6 @@ final class File : Source, Sink, Seekable
             sysEnforce(FlushFileBuffers(_h) != 0);
         }
     }
-
 
     /**
      * Copies the rest of this file to the other. The positions of both files
