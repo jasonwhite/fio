@@ -249,24 +249,6 @@ class File : Source, Sink, Seekable
         assert(a.position == 4);
     }
 
-    unittest
-    {
-        // File is copied when passed to the function.
-        static void foo(File f)
-        {
-            f.write("abcd");
-        }
-
-        auto tf = testFile();
-        auto f = File(tf.name, FileFlags.writeEmpty);
-
-        assert(f.position == 0);
-
-        foo(f);
-
-        assert(f.position == 4);
-    }
-
     /// Ditto
     ~this()
     {
