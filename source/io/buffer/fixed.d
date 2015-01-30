@@ -1,69 +1,109 @@
 /**
- * Copyright: Copyright Jason White, 2013-
+ * Copyright: Copyright Jason White, 2015-
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  *
  * Description:
- * Buffers a stream using a fixed size buffer.
+ * Buffers a stream using a fixed-size buffer.
  */
 module io.buffer.fixed;
 
 import io.stream;
 import io.buffer.traits;
 
-
-class FixedBuffer(Stream, Access access = Access.all)
-    if (isBufferable!(Stream, access))
+class Buffered(Stream) : Stream
 {
-    private
-    {
-        enum bufferReads = isSource!Stream &&
-            (access & Access.read) == Access.read;
-        enum bufferWrites = isSink!Stream &&
-            (access & Access.write) == Access.write;
-    }
-
-    // The underlying stream.
-    Stream stream;
-
-    alias stream this;
-
     // Buffer to store the data to be read or written.
     private void[] _buffer;
 
-    this(Stream stream, size_t bufSize = 8192)
+    // Current read/write position in the buffer. For writes, this is >0 if data
+    // has been written to the buffer but not flushed.
+    private size_t _position;
+
+    /**
+     * Forwards arguments to super class.
+     */
+    this(T...)(auto ref T args)
     {
-        this.stream = stream;
-        _buffer.length = bufSize;
+        import std.algorithm : forward;
+        super(forward!args);
+        _buffer.length = 8192;
     }
 
-    this(Stream stream, void[] buffer)
+    /**
+     * Upon destruction, any pending writes are flushed to the underlying
+     * stream.
+     */
+    ~this()
     {
-        this.stream = stream;
-        _buffer = buffer;
+        static if (is(Stream : Sink))
+            flush();
     }
 
-    static if (bufferReads)
+    /**
+     * Sets the size of the buffer. The default is 8192 bytes. This will only
+     * succeed if no data has been buffered (e.g., just after construction).
+     */
+    @property void bufferSize(size_t size)
     {
-        // Length of valid data in the buffer.
-        private void[] _window;
+        if (_position > 0) return;
+
+        static if (is(Stream : Source))
+        {
+            if (_valid > 0) return;
+        }
+
+        _buffer.length = size;
+    }
+
+    /**
+     * Gets the current buffer size. The default is 8192 bytes.
+     */
+    @property size_t bufferSize()
+    {
+        return _buffer.length;
+    }
+
+    static if (is(Stream : Source))
+    {
+        // Last valid position in the buffer. This is 0 if no read data is
+        // sitting in the buffer.
+        private size_t _valid;
+
+        /**
+         * Initiates a read. This handles flushing any data previously written.
+         */
+        static if (is(Stream : Sink))
+        {
+            private void beginRead()
+            {
+                if (_position > 0)
+                    flush();
+            }
+        }
+        else
+        {
+            // Nothing to do, this should be optimized away.
+            private void beginRead() {}
+        }
 
         private size_t readPartial(void[] buf)
         {
             import std.algorithm : min;
 
             // Satisfy what can be copied so far from the buffer.
-            immutable satisfiable = min(_window.length, buf.length);
-            if (satisfiable > 0)
-            {
-                buf[0 .. satisfiable] = _window[0 .. satisfiable];
-                _window = _window[satisfiable .. $];
-            }
+            immutable satisfiable = min(_valid - _position, buf.length);
+            buf[0 .. satisfiable] = _buffer[_position .. _position + satisfiable];
+            _position += satisfiable;
 
             return satisfiable;
         }
 
-        size_t read(void[] buf)
+        /**
+         * Reads data from the stream into the given buffer. The number of bytes
+         * read is returned.
+         */
+        override size_t read(void[] buf)
         {
             beginRead();
 
@@ -75,63 +115,63 @@ class FixedBuffer(Stream, Access access = Access.all)
 
             // Large read? Get it directly from the stream.
             if (buf.length >= _buffer.length)
-                return stream.read(buf);
+                return satisfied + super.read(buf);
 
             // Buffer is empty, fill it back up.
-            fill();
+            immutable bytesRead = super.read(_buffer);
+            _position = 0;
+            _valid = bytesRead;
 
             // Finish the copy
             return satisfied + readPartial(buf);
         }
+    }
 
+    static if (is(Stream : Sink))
+    {
         /**
-         * Fills the buffer with data.
+         * Initiates a write. This will handle seeking to the correct position
+         * due to a previous read.
          */
-        void fill()
+        static if (is(Stream : Source))
         {
-            immutable bytesRead = stream.read(_buffer);
-            _window = _buffer[0 .. bytesRead];
-        }
-
-        /**
-         * Initiates a read. This handles flushing any data previously written.
-         */
-        static if (bufferWrites)
-        {
-            void beginRead()
+            private void beginWrite()
             {
-                if (_position == 0) return;
-                flush();
+                if (_valid == 0) return;
+
+                // The length of the window indicates how much data hasn't
+                // "really" been read from the stream. Just seek backwards that
+                // distance.
+                super.skip(_position - _valid);
+                _position = _valid = 0;
             }
         }
         else
         {
-            // Nothing to do, this should be optimized away.
-            void beginRead() {}
+            // Nothing to do. This should be optimized away.
+            private void beginWrite() {}
         }
-    }
 
-    static if (bufferWrites)
-    {
-        // Current position in the buffer.
-        private size_t _position;
-
-        // Write part of the buffer.
+        /*
+         * Copies as much as possible to the stream buffer. The number of bytes
+         * copied is returned.
+         */
         private size_t writePartial(in void[] buf)
         {
             import std.algorithm : min;
 
             immutable satisfiable = min(_buffer.length - _position, buf.length);
-            if (satisfiable > 0)
-            {
-                _buffer[0 .. satisfiable] = buf[0 .. satisfiable];
-                _position += satisfiable;
-            }
+            _buffer[_position .. _position + satisfiable] = buf[0 .. satisfiable];
+            _position += satisfiable;
 
             return satisfiable;
         }
 
-        size_t write(const(void)[] buf)
+        /**
+         * Writes the given data to the buffered stream. When the internal
+         * buffer is completely filled, it is flushed to the underlying stream.
+         */
+        override size_t write(const(void)[] buf)
         {
             beginWrite();
 
@@ -146,92 +186,74 @@ class FixedBuffer(Stream, Access access = Access.all)
 
             // Large write? Push it directly to the stream.
             if (buf.length >= _buffer.length)
-                return stream.write(buf);
+                return satisfied + super.write(buf);
 
             // Write the rest.
             return satisfied + writePartial(buf);
         }
 
         /**
-         * Flushes all the data from the buffer.
+         * Writes any pending data to the underlying stream.
          */
         void flush()
         {
-            stream.write(_buffer[0 .. _position]);
-            _position = 0;
-        }
-
-        /**
-         * Initiates a write. This will handle seeking to the correct position
-         * due to a previous read.
-         */
-        static if (bufferReads)
-        {
-            void beginWrite()
-            {
-                if (_window.length == 0) return;
-
-                // The length of the window indicates how much data hasn't
-                // "really" been read from the stream. Just seek backwards that
-                // distance.
-                stream.skip(-_window.length);
-            }
-        }
-        else
-        {
-            // Nothing to do, this should be optimized away.
-            void beginWrite() {}
+            if (_position > 0)
+                _position -= super.write(_buffer[0 .. _position]);
         }
     }
 
-    static if (isSeekable!Stream)
+    static if (is(Stream : Seekable))
     {
-        ptrdiff_t seekTo(ptrdiff_t offset, From from = From.start)
+        /**
+         * Seeks to the given position relative to the given starting point.
+         */
+        override ptrdiff_t seekTo(ptrdiff_t offset, From from = From.start)
         {
-            static if (bufferReads)
+            static if (is(Stream : Source))
             {
-                // Invalidate the window
-                _window = _buffer[0 .. 0];
+                if (_valid > 0)
+                {
+                    if (from == From.here)
+                    {
+                        // Can we seek within the buffer?
+                        if (_position + offset < _valid)
+                        {
+                            _position += offset;
+                            return super.position + (_position - _valid);
+                        }
+                    }
+
+                    // Invalidate the window
+                    _position = _valid = 0;
+                }
             }
 
-            static if (bufferWrites)
+            static if (is(Stream : Sink))
             {
                 flush();
             }
 
-            return stream.seekTo(offset, from);
+            return super.seekTo(offset, from);
         }
     }
 }
 
-/**
- * Convenience function to create a fixed-sized buffer.
- */
-@property auto fixedBuffer(Stream)
-    (Stream stream, size_t bufSize = 8192)
-    if (isBufferable!(Stream))
-{
-    return new FixedBuffer!(Stream)(stream, bufSize);
-}
-
-/// Ditto
-@property auto fixedBuffer(Access access, Stream)
-    (Stream stream, size_t bufSize = 8192)
-    if (isBufferable!(Stream, access))
-{
-    return new FixedBuffer!(Stream, access)(stream, bufSize);
-}
-
 unittest
 {
-    import io.file.temp;
-
-    auto f = tempFile().fixedBuffer;
+    import io.file.stream, io.file.temp;
+    import stdio = std.stdio;
 
     immutable data = "The quick brown fox jumps over the lazy dog.";
     char buffer[data.length];
-    assert(f.write(data) == data.length);
-    f.position = 0;
-    assert(f.read(buffer) == buffer.length);
-    assert(buffer == data);
+
+    foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
+    {
+        auto f = tempFile!(Buffered!File);
+        f.bufferSize = bufSize;
+
+        assert(f.write(data) == data.length);
+        f.position = 0;
+        assert(f.read(buffer) == buffer.length);
+        assert(buffer == data);
+    }
 }
