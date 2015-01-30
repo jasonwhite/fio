@@ -2,6 +2,29 @@
  * Copyright: Copyright Jason White, 2014
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
+ *
+ * Description:
+ * This module provides a low-level file stream class.
+ *
+ * Synopsis:
+ * ---
+ * // Open a new file in read/write mode. Throws an exception if the file exists.
+ * auto f = new File("myfile", FileFlags.readWriteNew);
+ *
+ * // Write an arbitrary arrays to the stream.
+ * f.write("Hello world!");
+ *
+ * // Seek to the beginning.
+ * f.position = 0;
+ *
+ * // Read in 5 bytes.
+ * char buf[5];
+ * f.read(buf);
+ * assert(buf == "Hello");
+ * ---
+ * Note that the file handle is closed when garbage is collected. For design
+ * simplicity, there is no $(D close()) function. If deterministic destruction
+ * is required, use $(D scoped!File).
  */
 module io.file.stream;
 
@@ -252,6 +275,8 @@ class File : Source, Sink, Seekable
     /// Ditto
     ~this()
     {
+        // The file handle should only be invalid if the constructor throws an
+        // exception.
         if (_h == InvalidHandle) return;
 
         version (Posix)
