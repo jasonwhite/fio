@@ -229,7 +229,7 @@ unittest
 
     // Modify the file
     {
-        auto f = File(tf.name, FileFlags.readWriteEmpty);
+        auto f = new File(tf.name, FileFlags.readWriteEmpty);
         f.length = newData.length;
 
         auto map = f.memoryMap(Access.readWrite);
@@ -242,7 +242,7 @@ unittest
 
     // Read the file back in
     {
-        auto map = File(tf.name, FileFlags.readExisting).memoryMap();
+        auto map = new File(tf.name, FileFlags.readExisting).memoryMap();
         auto data = cast(char[])map;
         assert(data[0 .. newData.length] == newData[]);
     }
@@ -254,7 +254,7 @@ unittest
 
     auto tf = testFile();
 
-    auto f = File(tf.name, FileFlags.readWriteEmpty);
+    auto f = new File(tf.name, FileFlags.readWriteEmpty);
     assert(f.length == 0);
     assert(collectException!SysException(f.memoryMap(Access.readWrite)));
 }

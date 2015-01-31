@@ -21,7 +21,7 @@ struct Pipe
     }
 
     /// Ditto
-    size_t write(in void[] buf)
+    size_t write(const(void)[] buf)
     {
         return writeEnd.write(buf);
     }
@@ -31,7 +31,8 @@ struct Pipe
  * Creates an unnamed, unidirectional pipe that can be written to on one end and
  * read from on the other.
  */
-Pipe pipe()
+Pipe pipe(F = File)()
+    if (is(F == class))
 {
     version (Posix)
     {
@@ -39,7 +40,7 @@ Pipe pipe()
 
         int fd[2] = void;
         sysEnforce(pipe(fd) != -1);
-        return Pipe(File(fd[0]), File(fd[1]));
+        return Pipe(new F(fd[0]), new F(fd[1]));
     }
     else version(Windows)
     {
@@ -47,7 +48,7 @@ Pipe pipe()
 
         Handle readEnd, writeEnd;
         sysEnforce(CreatePipe(&readEnd, &writeEnd, null, 0));
-        return Pipe(File(readEnd), File(writeEnd));
+        return Pipe(new File(readEnd), new File(writeEnd));
     }
     else
     {

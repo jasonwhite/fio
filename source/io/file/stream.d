@@ -129,7 +129,7 @@ class File : Source, Sink, Seekable
      *
      * FIXME: This should be deprecated.
      */
-    static typeof(this) opCall(T...)(T args)
+    deprecated static typeof(this) opCall(T...)(T args)
     {
         return new typeof(this)(args);
     }
@@ -191,18 +191,18 @@ class File : Source, Sink, Seekable
         // Make sure the file does *not* exist
         try .file.remove(tf.name); catch (Exception e) {}
 
-        assert( File(tf.name, FileFlags.readExisting).ce);
-        assert( File(tf.name, FileFlags.writeExisting).ce);
-        assert(!File(tf.name, FileFlags.writeNew).ce);
-        assert(!File(tf.name, FileFlags.writeAlways).ce);
+        assert( new File(tf.name, FileFlags.readExisting).ce);
+        assert( new File(tf.name, FileFlags.writeExisting).ce);
+        assert(!new File(tf.name, FileFlags.writeNew).ce);
+        assert(!new File(tf.name, FileFlags.writeAlways).ce);
 
         // Make sure the file *does* exist.
         .file.write(tf.name, data);
 
-        assert(!File(tf.name, FileFlags.readExisting).ce);
-        assert(!File(tf.name, FileFlags.writeExisting).ce);
-        assert( File(tf.name, FileFlags.writeNew).ce);
-        assert(!File(tf.name, FileFlags.writeAlways).ce);
+        assert(!new File(tf.name, FileFlags.readExisting).ce);
+        assert(!new File(tf.name, FileFlags.writeExisting).ce);
+        assert( new File(tf.name, FileFlags.writeNew).ce);
+        assert(!new File(tf.name, FileFlags.writeAlways).ce);
     }
 
     /**
@@ -256,7 +256,7 @@ class File : Source, Sink, Seekable
                 DUPLICATE_SAME_ACCESS
             );
             sysEnforce(ret, "Failed to duplicate handle");
-            return File(ret);
+            return new File(ret);
         }
     }
 
@@ -264,7 +264,7 @@ class File : Source, Sink, Seekable
     {
         auto tf = testFile();
 
-        auto a = File(tf.name, FileFlags.writeEmpty);
+        auto a = new File(tf.name, FileFlags.writeEmpty);
 
         auto b = a.dup; // Copy
         b.write("abcd");
@@ -333,7 +333,7 @@ class File : Source, Sink, Seekable
 
         char[data.length] buf;
 
-        auto f = File(tf.name, FileFlags.readExisting);
+        auto f = new File(tf.name, FileFlags.readExisting);
         assert(buf[0 .. f.read(buf)] == data);
     }
 
@@ -371,8 +371,8 @@ class File : Source, Sink, Seekable
         immutable data = "\r\n\n\r\n";
         char[data.length] buf;
 
-        assert(File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
-        assert(File(tf.name, FileFlags.readExisting).read(buf));
+        assert(new File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
+        assert(new File(tf.name, FileFlags.readExisting).read(buf));
         assert(buf == data);
     }
 
@@ -433,7 +433,7 @@ class File : Source, Sink, Seekable
     {
         auto tf = testFile();
 
-        auto f = File(tf.name, FileFlags.readWriteAlways);
+        auto f = new File(tf.name, FileFlags.readWriteAlways);
 
         immutable data = "abcdefghijklmnopqrstuvwxyz";
         assert(f.write(data) == data.length);
@@ -470,7 +470,7 @@ class File : Source, Sink, Seekable
     unittest
     {
         auto tf = testFile();
-        auto f = File(tf.name, FileFlags.writeEmpty);
+        auto f = new File(tf.name, FileFlags.writeEmpty);
 
         assert(f.length == 0);
 
@@ -513,7 +513,7 @@ class File : Source, Sink, Seekable
     unittest
     {
         auto tf = testFile();
-        auto f = File(tf.name, FileFlags.writeEmpty);
+        auto f = new File(tf.name, FileFlags.writeEmpty);
         assert(f.length == 0);
         assert(f.position == 0);
 
