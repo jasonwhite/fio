@@ -1,5 +1,5 @@
 /**
- * Copyright: Copyright Jason White, 2014
+ * Copyright: Copyright Jason White, 2015
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  *
@@ -245,7 +245,7 @@ class File : Source, Sink, Seekable
         }
         else version (Windows)
         {
-            auto proc = GetCurrentProcess();
+            immutable proc = GetCurrentProcess();
             auto ret = DuplicateHandle(
                 proc, // Process with the file handle
                 _h,   // Handle to duplicate
