@@ -11,7 +11,7 @@ module io.buffer.fixed;
 import io.stream;
 import io.buffer.traits;
 
-class Buffered(Stream) : Stream
+class FixedBuffer(Stream) : Stream
 {
     // Buffer to store the data to be read or written.
     private void[] _buffer;
@@ -241,19 +241,30 @@ class Buffered(Stream) : Stream
 unittest
 {
     import io.file.stream, io.file.temp;
-    import stdio = std.stdio;
 
     immutable data = "The quick brown fox jumps over the lazy dog.";
     char buffer[data.length];
 
     foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
     {
-        auto f = tempFile!(Buffered!File);
+        auto f = tempFile!(FixedBuffer!File);
         f.bufferSize = bufSize;
+        assert(f.bufferSize == bufSize);
 
         assert(f.write(data) == data.length);
         f.position = 0;
         assert(f.read(buffer) == buffer.length);
         assert(buffer == data);
     }
+}
+
+unittest
+{
+    import io.file.stream;
+    import std.typecons : scoped;
+
+    auto tf = testFile();
+
+    auto f = scoped!(FixedBuffer!File)(tf.name, FileFlags.writeNew);
+    f.write("asdf");
 }
