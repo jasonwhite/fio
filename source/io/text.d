@@ -61,16 +61,6 @@ unittest
         assert(f.readEnd.read(buf) == buf.length);
         assert(buf == output);
     }
-
-    /*auto f = pipe();
-
-    immutable output = "The answer is [4, 8, 15, 16, 23, 42]\n";
-
-    assert(f.writeEnd.writeln("The answer is ", [4, 8, 15, 16, 23, 42]) == output.length);
-
-    char[output.length] buf;
-    assert(f.readEnd.read(buf) == buf.length);
-    assert(buf == output);*/
 }
 
 /**
