@@ -1,76 +1,57 @@
 /**
- * Copyright: Copyright Jason White, 2013-
+ * Copyright: Copyright Jason White, 2015-
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
 module io.buffer.traits;
 
-import io.traits;
+import io.stream : Source, Sink, Seekable;
+
 
 /**
- * Checks if the stream can be buffered. The requirements for buffering a stream
- * depend on the desired access to the stream. A stream that is exclusively
- * read from or written to can always be buffered. However, when both reads and
- * writes must be buffered, the stream must also be seekable. There are no
- * exceptions to this last rule when buffering.
+ * Checks if the stream can be buffered. A stream that is exclusively read from
+ * or written to can always be buffered. However, when both reads and writes
+ * must be buffered, the stream must also be seekable. There are no exceptions
+ * to this last rule when buffering.
  */
-template isBufferable(Stream, Access mask = Access.all)
+template isBufferable(Stream)
 {
-    static if ((mask & Access.readWrite) == Access.readWrite)
-        static if (isSource!Stream && isSink!Stream)
-            enum isBufferable = isSeekable!Stream;
-        else
-            enum isBufferable = isSource!Stream ^ isSink!Stream;
-    else static if ((mask & Access.read) == Access.read)
-        enum isBufferable = isSource!Stream;
-    else static if ((mask & Access.write) == Access.write)
-        enum isBufferable = isSink!Stream;
+    static if (is(Stream : Source) && is(Stream : Sink))
+        enum isBufferable = is(Stream : Seekable);
     else
-        enum isBufferable = false;
+        enum isBufferable = is(Stream : Source) ^ is(Stream : Sink);
 }
 
 unittest
 {
-    static struct A
+    // Okay
+    interface A : Source {}
+    static assert(isBufferable!A);
+
+    // Okay
+    interface B : Sink {}
+    static assert(isBufferable!B);
+
+    // Impossible! Stream must be seekable.
+    interface C : Source, Sink {}
+    static assert(!isBufferable!C);
+
+    // Okay. It's also seekable.
+    interface D : Source, Sink, Seekable {}
+    static assert(isBufferable!D);
+}
+
+/**
+ * Interface for all types of buffers.
+ */
+interface Buffered(Stream)
+    if (isBufferable!Stream)
+{
+    static if (is(Stream : Sink))
     {
-        size_t read(void[] data) { return 0; }
+        /**
+         * Writes buffered data to the underlying stream.
+         */
+        void flush();
     }
-
-    static assert(isBufferable!(A, Access.read));
-    static assert(!isBufferable!(A, Access.write));
-    static assert(isBufferable!(A, Access.readWrite));
-    static assert(isBufferable!(A, Access.all));
-
-    static struct B
-    {
-        size_t write(const(void)[] data) { return 0; }
-    }
-
-    static assert(!isBufferable!(B, Access.read));
-    static assert(isBufferable!(B, Access.write));
-    static assert(isBufferable!(B, Access.readWrite));
-    static assert(isBufferable!(B, Access.all));
-
-    static struct C
-    {
-        size_t read(void[] data) { return 0; }
-        size_t write(const(void)[] data) { return 0; }
-    }
-
-    static assert(isBufferable!(C, Access.read));
-    static assert(isBufferable!(C, Access.write));
-    static assert(!isBufferable!(C, Access.readWrite));
-    static assert(!isBufferable!(C, Access.all));
-
-    static struct D
-    {
-        size_t write(const(void)[] data) { return 0; }
-        size_t read(void[] data) { return 0; }
-        ptrdiff_t seekTo(ptrdiff_t offset, From from);
-    }
-
-    static assert(isBufferable!(D, Access.read));
-    static assert(isBufferable!(D, Access.write));
-    static assert(isBufferable!(D, Access.readWrite));
-    static assert(isBufferable!(D, Access.all));
 }
