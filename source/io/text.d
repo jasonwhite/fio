@@ -9,12 +9,36 @@ module io.text;
 
 import io.stream;
 
+/**
+ * Serializes the given arguments to a text representation followed by a new
+ * line.
+ */
+size_t print(T...)(Sink sink, auto ref T args)
+{
+    import std.conv : to;
+
+    size_t length;
+
+    foreach (arg; args)
+        length += sink.write(arg.to!string);
+
+    return length;
+}
+
+/// Ditto
+size_t print(T...)(auto ref T args)
+    if (T.length > 0 && !is(T[0] : Sink))
+{
+    import io.file.stdio : stdout;
+    import std.algorithm : forward;
+    return stdout.print(forward!args);
+}
 
 /**
  * Serializes the given arguments to a text representation followed by a new
  * line.
  */
-size_t writeln(T...)(Sink sink, auto ref T args)
+size_t println(T...)(Sink sink, auto ref T args)
 {
     import std.conv : to;
 
@@ -24,16 +48,17 @@ size_t writeln(T...)(Sink sink, auto ref T args)
         length += sink.write(arg.to!string);
 
     length += sink.write("\n");
+
     return length;
 }
 
 /// Ditto
-size_t writeln(T...)(auto ref T args)
+size_t println(T...)(auto ref T args)
     if (T.length > 0 && !is(T[0] : Sink))
 {
     import io.file.stdio : stdout;
     import std.algorithm : forward;
-    return stdout.writeln(forward!args);
+    return stdout.println(forward!args);
 }
 
 unittest
@@ -57,7 +82,7 @@ unittest
         auto f = pipe();
         immutable output = t[0];
         char[output.length] buf;
-        assert(f.writeEnd.writeln(t[1 .. $]) == output.length);
+        assert(f.writeEnd.println(t[1 .. $]) == output.length);
         assert(f.readEnd.read(buf) == buf.length);
         assert(buf == output);
     }
@@ -67,25 +92,25 @@ unittest
  * Serializes the given arguments according to the given format specifier
  * string.
  */
-@property size_t writef(T...)(Sink sink, string format, auto ref T args)
+@property size_t printf(T...)(Sink sink, string format, auto ref T args)
 {
     // TODO
     return 0;
 }
 
 /// Ditto
-@property size_t writef(T...)(string format, auto ref T args)
+@property size_t printf(T...)(string format, auto ref T args)
     if (T.length > 0 && !is(T[0] : Sink))
 {
     import io.file.stdio : stdout;
     import std.algorithm : forward;
-    return stdout.writef(forward!(format, args));
+    return stdout.printf(forward!(format, args));
 }
 
 /**
  * Like $(D writef), but also writes a new line.
  */
-@property size_t writefln(T...)(Sink sink, string format, auto ref T args)
+@property size_t printfln(T...)(Sink sink, string format, auto ref T args)
 {
     // TODO
     return 0;
@@ -97,5 +122,5 @@ unittest
 {
     import io.file.stdio : stdout;
     import std.algorithm : forward;
-    return stdout.writefln(forward!(format, args));
+    return stdout.printfln(forward!(format, args));
 }
