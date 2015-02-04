@@ -42,6 +42,33 @@ size_t print(T...)(auto ref T args)
     return stdout.print(forward!args);
 }
 
+unittest
+{
+    import io.file.pipe;
+    import std.typecons : tuple;
+    import std.typetuple : TypeTuple;
+
+    // First tuple value is expected output. Remaining are the types to be
+    // printed.
+    alias tests = TypeTuple!(
+        tuple(""),
+        tuple("Test", "Test"),
+        tuple("[4, 8, 15, 16, 23, 42]", [4, 8, 15, 16, 23, 42]),
+        tuple("The answer is 42", "The answer is ", 42),
+        tuple("01234567890", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0),
+        );
+
+    foreach (t; tests)
+    {
+        auto f = pipe();
+        immutable output = t[0];
+        char[output.length] buf;
+        assert(f.writeEnd.print(t[1 .. $]) == output.length);
+        assert(f.readEnd.read(buf) == buf.length);
+        assert(buf == output);
+    }
+}
+
 /**
  * Serializes the given arguments to a text representation followed by a new
  * line.
