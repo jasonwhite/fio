@@ -11,20 +11,6 @@ struct Pipe
 {
     File readEnd;  // Read end
     File writeEnd; // Write end
-
-    /**
-     * Forwards reads and writes to the appropriate ends of the pipe.
-     */
-    size_t read(void[] buf)
-    {
-        return readEnd.read(buf);
-    }
-
-    /// Ditto
-    size_t write(const(void)[] buf)
-    {
-        return writeEnd.write(buf);
-    }
 }
 
 /**
@@ -63,9 +49,9 @@ unittest
 
     // Write to one end of the pipe...
     immutable message = "Indubitably.";
-    p.write(message);
+    p.writeEnd.write(message);
 
     // ...and read from it on the other.
     char[message.length] buf;
-    assert(buf[0 .. p.read(buf)] == message);
+    assert(buf[0 .. p.readEnd.read(buf)] == message);
 }
