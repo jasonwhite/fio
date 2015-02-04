@@ -16,7 +16,7 @@ import io.file.stream;
  * Note: To avoid conflict with other libraries accessing these standard
  * streams, their file handle is duplicated and closed upon static destruction.
  */
-__gshared
+shared
 {
     /// Standard input stream.
     File stdin;
@@ -34,9 +34,9 @@ shared static this()
     version (Posix)
     {
         import core.sys.posix.unistd : dup;
-        stdin  = new File(dup(0));
-        stdout = new File(dup(1));
-        stderr = new File(dup(2));
+        stdin  = new shared File(dup(0));
+        stdout = new shared File(dup(1));
+        stderr = new shared File(dup(2));
     }
     else version (Windows)
     {
