@@ -56,7 +56,7 @@ final class MemoryMap
      *            default.
      *   length = Length of the file. If 0, the length is taken to be the size
      *            of the file. 0 by default.
-     *   start = Position within the file to start the mapping. This must be
+     *   start = Offset within the file to start the mapping. This must be
      *           a multiple of the page size (generally 4096). 0 by default.
      *   share = If true, changes are visible to other processes. If false,
      *           changes are not visible to other processes and are never
@@ -69,7 +69,7 @@ final class MemoryMap
      * Throws: SysException
      */
     this(File file, Access access = Access.read, size_t length = 0,
-        File.Position start = 0, bool share = true, void* address = null)
+        File.Offset start = 0, bool share = true, void* address = null)
     {
         version (Posix)
         {
@@ -214,7 +214,7 @@ final class MemoryMap
  * Convenience function for creating a memory map.
  */
 MemoryMap memoryMap(File file, Access access = Access.read,
-        size_t length = 0, File.Position start = 0, bool share = true,
+        size_t length = 0, File.Offset start = 0, bool share = true,
         void* address = null)
 {
     return new MemoryMap(file, access, length, start, share, address);
