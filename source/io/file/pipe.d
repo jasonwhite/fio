@@ -7,17 +7,18 @@ module io.file.pipe;
 
 import io.file.stream;
 
-struct Pipe
+struct Pipe(F = File)
+    if (is(F == class))
 {
-    File readEnd;  // Read end
-    File writeEnd; // Write end
+    F readEnd;  // Read end
+    F writeEnd; // Write end
 }
 
 /**
  * Creates an unnamed, unidirectional pipe that can be written to on one end and
  * read from on the other.
  */
-Pipe pipe(F = File)()
+Pipe!F pipe(F = File)()
     if (is(F == class))
 {
     version (Posix)
@@ -26,7 +27,7 @@ Pipe pipe(F = File)()
 
         int fd[2] = void;
         sysEnforce(pipe(fd) != -1);
-        return Pipe(new F(fd[0]), new F(fd[1]));
+        return Pipe!F(new F(fd[0]), new F(fd[1]));
     }
     else version(Windows)
     {
@@ -34,7 +35,7 @@ Pipe pipe(F = File)()
 
         Handle readEnd, writeEnd;
         sysEnforce(CreatePipe(&readEnd, &writeEnd, null, 0));
-        return Pipe(new File(readEnd), new File(writeEnd));
+        return Pipe!F(new F(readEnd), new F(writeEnd));
     }
     else
     {
