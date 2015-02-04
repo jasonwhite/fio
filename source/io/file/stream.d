@@ -394,16 +394,8 @@ class File : Source, Sink, Seekable
         assert(buf == data);
     }
 
-    /// An absolute position in the file.
-    alias Position = ulong;
-
     /// An offset from an absolute position
     alias Offset = long;
-
-    /// Special positions.
-    static immutable Position
-        start = 0,
-        end   = Position.max;
 
     /**
      * Seeks relative to a position.
