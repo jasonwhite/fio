@@ -31,6 +31,7 @@ interface Source
      * returned.
      */
     size_t read(void[] buf);
+    size_t read(void[] buf) shared;
 
     /**
      * Reads exactly the number of bytes requested from the stream. Throws an
@@ -39,6 +40,16 @@ interface Source
      * Throws: ReadException if the given buffer cannot be completely filled.
      */
     final size_t readExactly(void[] buf)
+    {
+        immutable bytesRead = read(buf);
+        if (bytesRead != buf.length)
+            throw new ReadException("Failed to fill entire buffer from stream");
+
+        return bytesRead;
+    }
+
+    /// Ditto
+    final size_t readExactly(void[] buf) shared
     {
         immutable bytesRead = read(buf);
         if (bytesRead != buf.length)
@@ -58,6 +69,7 @@ interface Sink
      * returned.
      */
     size_t write(const(void)[] data);
+    size_t write(const(void)[] data) shared;
 
     /**
      * Writes exactly the given buffer and no less. Throws an exception if it cannot
@@ -65,7 +77,17 @@ interface Sink
      *
      * Throws: WriteException if the given buffer cannot be completely written.
      */
-    final size_t writeExactly(in void[] buf)
+    final size_t writeExactly(const(void)[] buf)
+    {
+        immutable bytesWritten = write(buf);
+        if (bytesWritten != buf.length)
+            throw new WriteException("Failed to write entire buffer to stream");
+
+        return bytesWritten;
+    }
+
+    /// Ditto
+    final size_t writeExactly(const(void)[] buf) shared
     {
         immutable bytesWritten = write(buf);
         if (bytesWritten != buf.length)
@@ -88,6 +110,7 @@ interface Seekable
      *   from = The relative position to seek to.
      */
     long seekTo(long offset, From from = From.start);
+    long seekTo(long offset, From from = From.start) shared;
 
     /**
      * Set the position (in bytes) of a stream.
@@ -100,6 +123,12 @@ interface Seekable
         seekTo(offset, From.start);
     }
 
+    /// Ditto
+    final @property void position(long offset) shared
+    {
+        seekTo(offset, From.start);
+    }
+
     /**
      * Get the position (in bytes) of a stream.
      */
@@ -108,10 +137,22 @@ interface Seekable
         return seekTo(0, From.here);
     }
 
+    /// Ditto
+    final @property long position() shared
+    {
+        return seekTo(0, From.here);
+    }
+
     /**
      * Skip the specified number of bytes forward or backward.
      */
     final @property long skip(long offset)
+    {
+        return seekTo(offset, From.here);
+    }
+
+    /// Ditto
+    final @property long skip(long offset) shared
     {
         return seekTo(offset, From.here);
     }
@@ -139,12 +180,24 @@ final class NullStream : Source, Sink
         return buf.length;
     }
 
+    /// Ditto
+    synchronized size_t read(void[] buf)
+    {
+        return (cast(NullStream)this).read(buf);
+    }
+
     /**
      * Simply returns the length of the data array.
      */
     size_t write(const(void)[] data)
     {
         return data.length;
+    }
+
+    /// Ditto
+    size_t write(const(void)[] data) shared
+    {
+        return (cast(NullStream)this).write(data);
     }
 }
 
