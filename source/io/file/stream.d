@@ -106,7 +106,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 }
 
 /**
- * A light-weight, cross-platform wrapper around low-level file operations.
+ * A cross-platform wrapper around low-level file operations.
  */
 class File : Source, Sink, Seekable
 {
@@ -142,6 +142,33 @@ class File : Source, Sink, Seekable
      * ---
      */
     this(string name, FileFlags flags = FileFlags.readExisting)
+    {
+        version (Posix)
+        {
+            import std.string : toStringz;
+
+            _h = .open(toStringz(name), flags, 0b110_000_000);
+        }
+        else version (Windows)
+        {
+            import std.utf : toUTF16z;
+
+            _h = .CreateFileW(
+                name.toUTF16z(),       // File name
+                flags.access,          // Desired access
+                flags.share,           // Share mode
+                null,                  // Security attributes
+                flags.mode,            // Creation disposition
+                FILE_ATTRIBUTE_NORMAL, // Flags and attributes
+                null,                  // Template file handle
+                );
+        }
+
+        sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name ~"'");
+    }
+
+    /// Ditto
+    this(string name, FileFlags flags = FileFlags.readExisting) shared
     {
         version (Posix)
         {
@@ -229,7 +256,7 @@ class File : Source, Sink, Seekable
     }
 
     /**
-     * Duplicates the internal file handle.
+     * Duplicates the internal file handle and returns a new file object.
      */
     typeof(this) dup()
     {
@@ -254,6 +281,12 @@ class File : Source, Sink, Seekable
             sysEnforce(ret, "Failed to duplicate handle");
             return new File(ret);
         }
+    }
+
+    /// Ditto
+    typeof(this) dup() shared
+    {
+        return (cast(File)this).dup();
     }
 
     unittest
@@ -537,10 +570,20 @@ class File : Source, Sink, Seekable
     }
 
     /// Ditto
+    version (Posix)
     @property void length(Offset len) shared
     {
         // The underlying operation should already be atomic under the hood.
         // Thus, there is no need for synchronization here.
+        (cast(File)this).length(len);
+    }
+
+    /// Ditto
+    version (Windows)
+    synchronized @property void length(Offset len) shared
+    {
+        // On Windows, the underlying operation involves a seek, which is not
+        // atomic. Thus, this method must be synchronized.
         (cast(File)this).length(len);
     }
 
