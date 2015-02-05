@@ -145,7 +145,7 @@ File tempFile(F = File, T)(T dir = tempDir!T)
         "Failed to create temporary file '"~ path ~"'"
     );
 
-    return File(h);
+    return new F(h);
 }
 
 ///
