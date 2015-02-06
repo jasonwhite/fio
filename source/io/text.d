@@ -227,13 +227,13 @@ struct ByDelimiter(T, Delimiter)
     private
     {
         import std.array : Appender;
-        import io.block : Block, byBlock;
+        import io.block : ByBlock, byBlock;
 
         // Holds the current line
         Appender!(T[]) _line;
 
         // Iterates over the stream in small blocks
-        Block!(T, Source) _blocks;
+        ByBlock!(T, Source) _blocks;
 
         // Are we there yet?
         bool _empty = false;

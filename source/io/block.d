@@ -15,7 +15,7 @@ import io.traits, io.stream;
  * should not be mixed with the underlying stream without first seeking to a
  * specific location in the stream.
  */
-struct Block(T, Stream)
+struct ByBlock(T, Stream)
     if (isSource!Stream || isSink!Stream)
 {
     Stream stream;
@@ -113,7 +113,7 @@ struct Block(T, Stream)
 @property auto byBlock(T, Stream)(Stream stream)
     if (isSource!Stream || isSink!Stream)
 {
-    return Block!(T, Stream)(stream);
+    return ByBlock!(T, Stream)(stream);
 }
 
 unittest
