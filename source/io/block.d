@@ -7,9 +7,95 @@ module io.block;
 
 import io.traits, io.stream;
 
+
 /**
- * Wraps a stream in a range interface. It is assumed that the stream is
- * buffered such that performance is not adversely affected.
+ * Range that reads up to a fixed size chunk of data from a stream at a time.
+ */
+struct ByChunk
+{
+    private
+    {
+        Source _source;
+
+        // Buffer to read in the data into.
+        void[] _buffer;
+
+        // Length of valid data in the buffer
+        size_t _valid;
+    }
+
+    this(Source source, size_t size = 4096)
+    {
+        this(source, new void[](size));
+    }
+
+    this(Source source, void[] buffer)
+    {
+        _source = source;
+        _buffer = buffer;
+        popFront();
+    }
+
+    /**
+     * Reads the next chunk from the stream.
+     */
+    void popFront()
+    {
+        _valid = _source.read(_buffer);
+    }
+
+    /**
+     * Returns the current chunk of the stream.
+     */
+    const(void)[] front() const pure
+    {
+        return _buffer[0 .. _valid];
+    }
+
+    /**
+     * Returns true if there are no more chunks to be read from the stream.
+     */
+    bool empty() const pure nothrow
+    {
+        return _valid == 0;
+    }
+}
+
+/**
+ * Convenience function for creating $(D ByChunk) range over a stream.
+ */
+@property ByChunk byChunk(Source source, size_t size = 4096)
+{
+    return ByChunk(source, size);
+}
+
+/// Ditto
+@property ByChunk byChunk(Source source, void[] buffer)
+{
+    return ByChunk(source, buffer);
+}
+
+unittest
+{
+    import io.file.temp;
+    import std.algorithm : equal;
+    import std.array : join;
+
+    immutable chunkSize = 4;
+    immutable chunks = ["1234", "5678", "abcd", "efgh", "ij"];
+    immutable data = chunks.join();
+
+    auto f = tempFile();
+    f.writeExactly(data);
+    f.position = 0;
+
+    assert(f.byChunk(4).equal(chunks));
+}
+
+/**
+ * Wraps a stream in a range interface such that blocks of a fixed size are read
+ * from the source. It is assumed that the stream is buffered such that
+ * performance is not adversely affected.
  *
  * This range cannot be saved with $(D save()). As such, the usage of this
  * should not be mixed with the underlying stream without first seeking to a
