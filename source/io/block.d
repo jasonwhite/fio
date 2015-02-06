@@ -100,7 +100,7 @@ struct Block(T, Stream)
          *
          * Throws: WriteException
          */
-        void put(in T[] blocks)
+        void put(const(T)[] blocks)
         {
             stream.writeExactly(blocks);
         }
@@ -140,5 +140,7 @@ unittest
     blocks.popFront();
 
     assert(equal(data, blocks));
+    blocks.popFront();
+    assert(blocks.empty);
     assert(!equal(data, blocks));
 }
