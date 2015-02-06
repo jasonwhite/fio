@@ -233,7 +233,7 @@ struct ByDelimiter(T, Delimiter)
         Appender!(T[]) _line;
 
         // Iterates over the stream in small blocks
-        ByBlock!(T, Source) _blocks;
+        ByBlock!T _blocks;
 
         // Are we there yet?
         bool _empty = false;

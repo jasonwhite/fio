@@ -15,105 +15,72 @@ import io.traits, io.stream;
  * should not be mixed with the underlying stream without first seeking to a
  * specific location in the stream.
  */
-struct ByBlock(T, Stream)
-    if (isSource!Stream || isSink!Stream)
+struct ByBlock(T)
 {
-    Stream stream;
+    private Source _source;
 
-    this(Stream s)
+    this(Source source)
     {
-        this.stream = s;
+        _source = source;
 
-        static if (isSource!Stream)
+        // Prime the cannons.
+        popFront();
+    }
+
+    private
+    {
+        // The current block in the stream.
+        T _current;
+
+        // Are we there yet?
+        bool _empty = false;
+    }
+
+    /**
+     * Removes one block from the stream. The range is considered empty when
+     * exactly 0 bytes can be read from the stream. Throws an exception if a
+     * partial block is read.
+     */
+    void popFront()
+    {
+        immutable n = _source.read((&_current)[0 .. 1]);
+
+        switch (n)
         {
-            // Prime the cannons.
-            popFront();
+            case 0:
+                _empty = true;
+                break;
+            case T.sizeof:
+                _empty = false;
+                break;
+            default:
+                throw new ReadException("Read partial block from stream.");
         }
     }
 
-    static if (isSource!Stream)
+    /**
+     * Gets the current block in the stream.
+     */
+    @property ref const(T) front() const pure nothrow
     {
-        private
-        {
-            // The current block in the stream.
-            T _current;
-
-            // Are we there yet?
-            bool _empty = false;
-        }
-
-        /**
-         * Removes one block from the stream. The range is considered empty when
-         * exactly 0 bytes can be read from the stream. Throws an exception if a
-         * partial block is read.
-         */
-        void popFront()
-        {
-            immutable n = stream.read((&_current)[0 .. 1]);
-
-            switch (n)
-            {
-                case 0:
-                    _empty = true;
-                    break;
-                case T.sizeof:
-                    _empty = false;
-                    break;
-                default:
-                    throw new ReadException("Read partial block from stream.");
-            }
-        }
-
-        /**
-         * Gets the current block in the stream.
-         */
-        @property ref const(T) front() const pure nothrow
-        {
-            return _current;
-        }
-
-        /**
-         * Returns true if there are no more blocks in the stream.
-         */
-        @property bool empty() const pure nothrow
-        {
-            return _empty;
-        }
+        return _current;
     }
 
-    static if (isSink!Stream)
+    /**
+     * Returns true if there are no more blocks in the stream.
+     */
+    @property bool empty() const pure nothrow
     {
-        /**
-         * Writes a block to the stream. Throws an exception if the entire block
-         * cannot be written.
-         *
-         * Throws: WriteException
-         */
-        void put()(const auto ref T block)
-        {
-            stream.writeExactly((&block)[0 .. 1]);
-        }
-
-        /**
-         * Writes multiple blocks to the stream. Throws an exception if all of
-         * the blocks could not be written.
-         *
-         * Throws: WriteException
-         */
-        void put(const(T)[] blocks)
-        {
-            stream.writeExactly(blocks);
-        }
+        return _empty;
     }
 }
 
 /**
  * Helper function for constructing a block range.
  */
-@property auto byBlock(T, Stream)(Stream stream)
-    if (isSource!Stream || isSink!Stream)
+@property auto byBlock(T)(Source source)
 {
-    return ByBlock!(T, Stream)(stream);
+    return ByBlock!T(source);
 }
 
 unittest
@@ -132,12 +99,11 @@ unittest
         {7, 8, 9},
     ];
 
-    auto blocks = tempFile.byBlock!Data;
+    auto f = tempFile;
+    f.write(data);
+    f.position = 0;
 
-    blocks.put(data);
-
-    blocks.stream.position = 0;
-    blocks.popFront();
+    auto blocks = f.byBlock!Data;
 
     assert(equal(data, blocks));
     blocks.popFront();
