@@ -220,7 +220,8 @@ unittest
     static assert( isValidDelimiter!(short, int));
 }
 
-struct ByLine(T, Delimiter)
+
+struct ByDelimiter(T, Delimiter)
     if (isValidDelimiter!(Delimiter, T))
 {
     private
@@ -336,24 +337,26 @@ struct ByLine(T, Delimiter)
 }
 
 /**
- * Convenience function for returning a line reader.
+ * Convenience function for returning a delimiter range.
  */
-@property auto byLine(T = char)
-    (Source source)
-{
-    return ByLine!(T, char)(source, '\n');
-}
-
-/// Ditto
-@property auto byLine(T = char, Delimiter = char)
+@property auto byDelimiter(T = char, Delimiter)
     (Source source, Delimiter delimiter)
 {
-    return ByLine!(T, Delimiter)(source, delimiter);
+    return ByDelimiter!(T, Delimiter)(source, delimiter);
+}
+
+/**
+ * Convenience function for returning a delimiter range that iterates over
+ * lines.
+ */
+@property auto byLine(T)(Source source)
+{
+    return ByDelimiter!(T, dchar)(source, '\n');
 }
 
 version (unittest)
 {
-    void testByLine(const string[] lines, string delimiter)
+    void testByDelimiter(const string[] lines, string delimiter)
     {
         import io.file.temp;
         import std.array : join;
@@ -365,13 +368,13 @@ version (unittest)
         f.writeExactly(text);
         f.position = 0;
 
-        assert(f.byLine(delimiter).equal(lines));
+        assert(f.byDelimiter(delimiter).equal(lines));
         assert(f.position == text.length);
 
         // Add a trailing terminator at the end of the file.
         assert(f.write(delimiter) == delimiter.length);
         f.position = 0;
-        assert(f.byLine(delimiter).equal(lines));
+        assert(f.byDelimiter(delimiter).equal(lines));
     }
 }
 
@@ -385,6 +388,6 @@ unittest
         "This is the last line.",
     ];
 
-    testByLine(lines, "\n");
-    testByLine(lines, "\r\n");
+    testByDelimiter(lines, "\n");
+    testByDelimiter(lines, "\r\n");
 }
