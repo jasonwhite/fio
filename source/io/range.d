@@ -3,7 +3,7 @@
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
-module io.block;
+module io.range;
 
 import io.traits, io.stream;
 
@@ -239,7 +239,6 @@ struct ByDelimiter(T, Delimiter)
     private
     {
         import std.array : Appender;
-        import io.block : ByBlock, byBlock;
 
         // Holds the current line
         Appender!(T[]) _line;
@@ -355,15 +354,6 @@ struct ByDelimiter(T, Delimiter)
     (Source source, Delimiter delimiter)
 {
     return ByDelimiter!(T, Delimiter)(source, delimiter);
-}
-
-/**
- * Convenience function for returning a delimiter range that iterates over
- * lines.
- */
-@property auto byLine(T)(Source source)
-{
-    return ByDelimiter!(T, dchar)(source, '\n');
 }
 
 version (unittest)
