@@ -5,7 +5,44 @@
  */
 module io.stream;
 
-public import io.traits;
+/**
+ * Specifies how to access a stream.
+ */
+enum Access
+{
+    /// Default access. Not very useful.
+    none = 0,
+
+    /// Allows only read operations on the stream.
+    read = 1 << 0,
+
+    /// Allows only write operations on the stream.
+    write = 1 << 1,
+
+    /// Allows data to be executed. This is only used for memory mapped files.
+    execute = 1 << 2,
+
+    /// Allows both read and write operations on the stream.
+    readWrite = read | write,
+
+    /// Complete access.
+    all = read | write | execute,
+}
+
+/**
+ * Relative position to seek from.
+ */
+enum From
+{
+    /// Seek relative to the beginning of the stream.
+    start,
+
+    /// Seek relative to the current position in the stream.
+    here,
+
+    /// Seek relative to the end of the stream.
+    end,
+}
 
 /**
  * Stream exceptions.
@@ -203,12 +240,6 @@ final class NullStream : Source, Sink
 
 unittest
 {
-    static assert(
-         isSource!NullStream &&
-         isSink!NullStream &&
-        !isSeekable!NullStream
-        );
-
     auto s = new NullStream();
 
     // Reading
@@ -226,9 +257,7 @@ version (none):
  * Copies a single block from the source to the sink. The number of bytes copied
  * is returned.
  */
-private size_t copyBlock(Source, Sink)
-    (auto ref Source source, auto ref Sink sink, ubyte[] buf)
-    if (isSource!Source && isSink!Sink)
+private size_t copyBlock(Source source, Sink sink, ubyte[] buf)
 {
     size_t bytesRead = source.read(buf);
     size_t bytesWritten = sink.write(buf[0 .. bytesRead]);
@@ -265,9 +294,8 @@ unittest
  * bytes. The positions of both streams are advanced according to how much is
  * copied. The number of copied bytes is returned.
  */
-size_t copyTo(Source, Sink)(auto ref Source source, auto ref Sink sink,
+size_t copyTo(Source source, Sink sink,
         ubyte[] buf, size_t n = size_t.max/2-1)
-    if (isSource!Source && isSink!Sink)
 {
     size_t total;
     size_t copied;
@@ -290,9 +318,8 @@ size_t copyTo(Source, Sink)(auto ref Source source, auto ref Sink sink,
 }
 
 /// Ditto
-size_t copyTo(Source, Sink, size_t BufSize = 4096)
-    (auto ref Source source, auto ref Sink sink, size_t n = size_t.max/2-1)
-    if (isSource!Source && isSink!Sink)
+size_t copyTo(size_t BufSize = 4096)
+    (Source source, Sink sink, size_t n = size_t.max/2-1)
 {
     ubyte[BufSize] buffer;
     return source.copyTo(sink, n);

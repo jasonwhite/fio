@@ -28,7 +28,7 @@
  */
 module io.file.stream;
 
-import io.traits, io.stream;
+import io.stream;
 public import io.file.flags;
 
 version (unittest)
@@ -917,13 +917,6 @@ class File : Source, Sink, Seekable
             assert(buf == s);
         }
     }
-}
-
-unittest
-{
-    static assert(isSource!File);
-    static assert(isSink!File);
-    static assert(isSeekable!File);
 }
 
 version (unittest)

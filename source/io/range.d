@@ -5,7 +5,7 @@
  */
 module io.range;
 
-import io.traits, io.stream;
+import io.stream;
 
 
 /**
