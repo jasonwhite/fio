@@ -202,7 +202,7 @@ class FixedBuffer(Stream) : Stream
         }
     }
 
-    static if (is(Stream : Seekable))
+    static if (is(Stream : Seekable!SourceSink))
     {
         /**
          * Seeks to the given position relative to the given starting point.

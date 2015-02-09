@@ -108,7 +108,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 /**
  * A cross-platform wrapper around low-level file operations.
  */
-class File : Source, Sink, Seekable
+class File : Seekable!SourceSink
 {
     // Platform-specific file handle
     version (Posix)

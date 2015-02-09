@@ -5,7 +5,7 @@
  */
 module io.buffer.traits;
 
-import io.stream : Source, Sink, Seekable;
+import io.stream : Source, Sink, SourceSink, Seekable;
 
 
 /**
@@ -14,31 +14,29 @@ import io.stream : Source, Sink, Seekable;
  * must be buffered, the stream must also be seekable. There are no exceptions
  * to this last rule when buffering.
  */
-template isBufferable(Stream)
-{
-    static if (is(Stream : Source) && is(Stream : Sink))
-        enum isBufferable = is(Stream : Seekable);
-    else
-        enum isBufferable = is(Stream : Source) ^ is(Stream : Sink);
-}
+enum isBufferable(Stream) = (is(Stream : Source) ^ is(Stream : Sink)) ||
+    is(Stream : Seekable!SourceSink);
 
 unittest
 {
-    // Okay
     interface A : Source {}
     static assert(isBufferable!A);
 
-    // Okay
     interface B : Sink {}
     static assert(isBufferable!B);
 
-    // Impossible! Stream must be seekable.
-    interface C : Source, Sink {}
+    // Not possible. Stream must be seekable.
+    interface C : SourceSink {}
     static assert(!isBufferable!C);
 
-    // Okay. It's also seekable.
-    interface D : Source, Sink, Seekable {}
+    interface D : Seekable!SourceSink {}
     static assert(isBufferable!D);
+
+    interface E : Seekable!Source {}
+    static assert(isBufferable!E);
+
+    interface F : Seekable!Sink {}
+    static assert(isBufferable!F);
 }
 
 /**

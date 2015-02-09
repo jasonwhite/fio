@@ -135,9 +135,14 @@ interface Sink
 }
 
 /**
+ * A stream that is both a Source and a Sink.
+ */
+interface SourceSink : Source, Sink {}
+
+/**
  * A seekable stream can move the read/write starting position in the stream.
  */
-interface Seekable
+interface Seekable(Stream) : Stream
 {
     /**
      * Seeks to the specified offset relative to the given starting location.
@@ -193,6 +198,16 @@ interface Seekable
     {
         return seekTo(offset, From.here);
     }
+}
+
+unittest
+{
+    static assert(is(Seekable!SourceSink : Source));
+    static assert(is(Seekable!SourceSink : Sink));
+    static assert(is(Seekable!Source : Source));
+    static assert(is(Seekable!Sink : Sink));
+    static assert(!is(Seekable!Source : Sink));
+    static assert(!is(Seekable!Sink : Source));
 }
 
 /**
