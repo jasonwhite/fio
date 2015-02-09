@@ -167,33 +167,6 @@ class File : Seekable!SourceSink
         sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name ~"'");
     }
 
-    /// Ditto
-    this(string name, FileFlags flags = FileFlags.readExisting) shared
-    {
-        version (Posix)
-        {
-            import std.string : toStringz;
-
-            _h = .open(toStringz(name), flags, 0b110_000_000);
-        }
-        else version (Windows)
-        {
-            import std.utf : toUTF16z;
-
-            _h = .CreateFileW(
-                name.toUTF16z(),       // File name
-                flags.access,          // Desired access
-                flags.share,           // Share mode
-                null,                  // Security attributes
-                flags.mode,            // Creation disposition
-                FILE_ATTRIBUTE_NORMAL, // Flags and attributes
-                null,                  // Template file handle
-                );
-        }
-
-        sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name ~"'");
-    }
-
     unittest
     {
         import std.exception : ce = collectException;
@@ -249,12 +222,6 @@ class File : Seekable!SourceSink
         _h = h;
     }
 
-    /// Ditto
-    this(Handle h) shared
-    {
-        _h = h;
-    }
-
     /**
      * Duplicates the internal file handle and returns a new file object.
      */
@@ -281,12 +248,6 @@ class File : Seekable!SourceSink
             sysEnforce(ret, "Failed to duplicate handle");
             return new File(ret);
         }
-    }
-
-    /// Ditto
-    typeof(this) dup() shared
-    {
-        return (cast(File)this).dup();
     }
 
     unittest
@@ -327,12 +288,6 @@ class File : Seekable!SourceSink
         return _h;
     }
 
-    /// Ditto
-    @property Handle handle() shared const pure nothrow
-    {
-        return (cast(File)this).handle();
-    }
-
     /**
      * Reads data from the file.
      *
@@ -357,14 +312,6 @@ class File : Seekable!SourceSink
             sysEnforce(ReadFile(_h, buf.ptr, buf.length, &n, null));
             return n;
         }
-    }
-
-    /// Ditto
-    size_t read(void[] buf) shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        return (cast(File)this).read(buf);
     }
 
     unittest
@@ -405,14 +352,6 @@ class File : Seekable!SourceSink
                 );
             return written;
         }
-    }
-
-    /// Ditto
-    size_t write(const(void)[] data) shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        return (cast(File)this).write(data);
     }
 
     unittest
@@ -472,14 +411,6 @@ class File : Seekable!SourceSink
         }
     }
 
-    /// Ditto
-    Offset seekTo(Offset offset, From from = From.start) shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        return (cast(File)this).seekTo(offset, from);
-    }
-
     unittest
     {
         auto tf = testFile();
@@ -518,14 +449,6 @@ class File : Seekable!SourceSink
         }
     }
 
-    /// Ditto
-    @property Offset length() shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        return (cast(File)this).length();
-    }
-
     unittest
     {
         auto tf = testFile();
@@ -558,7 +481,7 @@ class File : Seekable!SourceSink
         }
         else version (Windows)
         {
-            // FIXME: Is this thread-safe?
+            // This is not thread-safe.
             auto pos = seekTo(len);   // Seek to the correct position
             scope (exit) seekTo(pos); // Seek back
 
@@ -567,24 +490,6 @@ class File : Seekable!SourceSink
                 "Failed to set the length of the file"
                 );
         }
-    }
-
-    /// Ditto
-    version (Posix)
-    @property void length(Offset len) shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        (cast(File)this).length(len);
-    }
-
-    /// Ditto
-    version (Windows)
-    synchronized @property void length(Offset len) shared
-    {
-        // On Windows, the underlying operation involves a seek, which is not
-        // atomic. Thus, this method must be synchronized.
-        (cast(File)this).length(len);
     }
 
     unittest
@@ -621,14 +526,6 @@ class File : Seekable!SourceSink
         }
     }
 
-    /// Ditto
-    @property bool isTerminal() shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        return (cast(File)this).isTerminal();
-    }
-
     enum LockType
     {
         /**
@@ -659,15 +556,6 @@ class File : Seekable!SourceSink
 
             return .fcntl(_h, operation, &fl);
         }
-
-        /// Ditto
-        private int lockImpl(int operation, short type,
-            Offset start, Offset length) shared
-        {
-            // The underlying operation should already be atomic under the hood.
-            // Thus, there is no need for synchronization here.
-            return (cast(File)this).lockImpl(operation, type, start, length);
-        }
     }
     else version (Windows)
     {
@@ -688,15 +576,6 @@ class File : Seekable!SourceSink
 
             return F(_h, flags, 0, liLength.LowPart, liLength.HighPart,
                 &overlapped);
-        }
-
-        /// Ditto
-        private BOOL lockImpl(alias F, Flags...)(
-            Offset start, Offset length, Flags flags) shared
-        {
-            // The underlying operation should already be atomic under the hood.
-            // Thus, there is no need for synchronization here.
-            return (cast(File)this).lockImpl!(F, Flags)(start, length, flags);
         }
     }
 
@@ -729,15 +608,6 @@ class File : Seekable!SourceSink
                 ), "Failed to lock file"
             );
         }
-    }
-
-    /// Ditto
-    void lock(LockType lockType = LockType.readWrite,
-        Offset start = 0, Offset length = Offset.max) shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        (cast(File)this).lock(lockType, start, length);
     }
 
     /**
@@ -785,15 +655,6 @@ class File : Seekable!SourceSink
         }
     }
 
-    /// Ditto
-    bool tryLock(LockType lockType = LockType.readWrite,
-        Offset start = 0, Offset length = Offset.max) shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        return (cast(File)this).tryLock(lockType, start, length);
-    }
-
     void unlock(Offset start = 0, Offset length = Offset.max)
     {
         version (Posix)
@@ -808,14 +669,6 @@ class File : Seekable!SourceSink
             sysEnforce(lockImpl!UnlockFileEx(start, length),
                     "Failed to unlock file");
         }
-    }
-
-    /// Ditto
-    void unlock(Offset start = 0, Offset length = Offset.max) shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        return (cast(File)this).unlock(start, length);
     }
 
     /**
@@ -835,14 +688,6 @@ class File : Seekable!SourceSink
         }
     }
 
-    /// Ditto
-    void sync() shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        (cast(File)this).sync();
-    }
-
     /**
      * Like $(D sync()), but does not flush meta data.
      *
@@ -860,14 +705,6 @@ class File : Seekable!SourceSink
         }
     }
 
-    /// Ditto
-    void syncData() shared
-    {
-        // The underlying operation should already be atomic under the hood.
-        // Thus, there is no need for synchronization here.
-        (cast(File)this).syncData();
-    }
-
     /**
      * Copies the rest of this file to the other. The positions of both files
      * are appropriately incremented, as if one called read()/write() to copy
@@ -880,22 +717,6 @@ class File : Seekable!SourceSink
             immutable written = .sendfile(other._h, _h, null, n);
             sysEnforce(written >= 0, "Failed to copy file.");
             return written;
-        }
-
-        /// Ditto
-        size_t copyTo(File other, size_t n = ptrdiff_t.max) shared
-        {
-            // The underlying operation should already be atomic under the hood.
-            // Thus, there is no need for synchronization here.
-            return (cast(File)this).copyTo(other, n);
-        }
-
-        /// Ditto
-        size_t copyTo(shared(File) other, size_t n = ptrdiff_t.max) shared
-        {
-            // The underlying operation should already be atomic under the hood.
-            // Thus, there is no need for synchronization here.
-            return (cast(File)this).copyTo(cast(File)other, n);
         }
 
         unittest

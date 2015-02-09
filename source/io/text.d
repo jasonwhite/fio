@@ -26,16 +26,8 @@ size_t print(T...)(Sink sink, auto ref T args)
 }
 
 /// Ditto
-size_t print(T...)(shared(Sink) sink, auto ref T args)
-{
-    import std.algorithm : forward;
-    synchronized (sink)
-        return (cast(Sink)sink).print(forward!args);
-}
-
-/// Ditto
 size_t print(T...)(auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink) && !is(T[0] : shared(Sink)))
+    if (T.length > 0 && !is(T[0] : Sink))
 {
     import io.file.stdio : stdout;
     import std.algorithm : forward;
@@ -88,16 +80,8 @@ size_t println(T...)(Sink sink, auto ref T args)
 }
 
 /// Ditto
-size_t println(T...)(shared(Sink) sink, auto ref T args)
-{
-    import std.algorithm : forward;
-    synchronized (sink)
-        return (cast(Sink)sink).println(forward!args);
-}
-
-/// Ditto
 size_t println(T...)(auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink) && !is(T[0] : shared(Sink)))
+    if (T.length > 0 && !is(T[0] : Sink))
 {
     import io.file.stdio : stdout;
     import std.algorithm : forward;
@@ -142,16 +126,8 @@ unittest
 }
 
 /// Ditto
-size_t printf(T...)(shared(Sink) sink, string format, auto ref T args)
-{
-    import std.algorithm : forward;
-    synchronized (sink)
-        return (cast(Sink)sink).printf(format, forward!args);
-}
-
-/// Ditto
 @property size_t printf(T...)(string format, auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink) && !is(T[0] : shared(Sink)))
+    if (T.length > 0 && !is(T[0] : Sink))
 {
     import io.file.stdio : stdout;
     import std.algorithm : forward;
@@ -168,16 +144,8 @@ size_t printf(T...)(shared(Sink) sink, string format, auto ref T args)
 }
 
 /// Ditto
-size_t printfln(T...)(shared(Sink) sink, string format, auto ref T args)
-{
-    import std.algorithm : forward;
-    synchronized (sink)
-        return (cast(Sink)sink).printfln(format, forward!args);
-}
-
-/// Ditto
 @property size_t printfln(T...)(string format, auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink) && !is(T[0] : shared(Sink)))
+    if (T.length > 0 && !is(T[0] : Sink))
 {
     import io.file.stdio : stdout;
     import std.algorithm : forward;
