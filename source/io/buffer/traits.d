@@ -38,18 +38,3 @@ unittest
     interface F : Seekable!Sink {}
     static assert(isBufferable!F);
 }
-
-/**
- * Interface for all types of buffers.
- */
-interface Buffered(Stream)
-    if (isBufferable!Stream)
-{
-    static if (is(Stream : Sink))
-    {
-        /**
-         * Writes buffered data to the underlying stream.
-         */
-        void flush();
-    }
-}

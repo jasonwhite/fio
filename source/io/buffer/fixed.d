@@ -12,6 +12,7 @@ import io.stream;
 import io.buffer.traits;
 
 class FixedBuffer(Stream) : Stream
+    if (isBufferable!Stream)
 {
     // Buffer to store the data to be read or written.
     private void[] _buffer;
