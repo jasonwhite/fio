@@ -1,9 +1,5 @@
 # TODO
 
- * Implement BufferedStream
- * Implement TextStream
- * Implement byChunk
- * Implement byRecord
- * Add unit tests for copy
- * Add WrapStream.
+ * Add `splitter()` for splitting a stream (i.e., a generalized `byLine`).
+ * Add more unit tests.
  * Add comprehensive documentation.
