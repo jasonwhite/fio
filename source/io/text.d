@@ -4,10 +4,15 @@
  * Authors:   Jason White
  *
  * TODO: Find a more elegant way of reading and writing text.
+ *
+ * TODO: Be able to set the default output.
  */
 module io.text;
 
 import io.stream;
+
+import io.file.stdio : stdout;
+import std.algorithm : forward;
 
 /**
  * Serializes the given arguments to a text representation followed by a new
@@ -29,8 +34,6 @@ size_t print(T...)(Sink sink, auto ref T args)
 size_t print(T...)(auto ref T args)
     if (T.length > 0 && !is(T[0] : Sink))
 {
-    import io.file.stdio : stdout;
-    import std.algorithm : forward;
     return stdout.print(forward!args);
 }
 
@@ -65,27 +68,9 @@ unittest
  * Serializes the given arguments to a text representation followed by a new
  * line.
  */
-size_t println(T...)(Sink sink, auto ref T args)
-{
-    import std.conv : to;
-
-    size_t length;
-
-    foreach (arg; args)
-        length += sink.write(arg.to!string);
-
-    length += sink.write("\n");
-
-    return length;
-}
-
-/// Ditto
 size_t println(T...)(auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink))
 {
-    import io.file.stdio : stdout;
-    import std.algorithm : forward;
-    return stdout.println(forward!args);
+    return print(forward!args, '\n');
 }
 
 unittest
@@ -119,37 +104,58 @@ unittest
  * Serializes the given arguments according to the given format specifier
  * string.
  */
-@property size_t printf(T...)(Sink sink, string format, auto ref T args)
+void printf(T...)(Sink sink, string format, auto ref T args)
 {
-    // TODO
-    return 0;
+    import std.format : formattedWrite;
+    formattedWrite(sink, forward!(format, args));
 }
 
 /// Ditto
-@property size_t printf(T...)(string format, auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink))
+void printf(T...)(string format, auto ref T args)
 {
-    import io.file.stdio : stdout;
-    import std.algorithm : forward;
-    return stdout.printf(forward!(format, args));
+    stdout.printf(forward!(format, args));
+}
+
+unittest
+{
+    import io.file.pipe;
+    import std.typecons : tuple;
+    import std.typetuple : TypeTuple;
+
+    // First tuple value is expected output. Remaining are the types to be
+    // printed.
+    alias tests = TypeTuple!(
+        tuple("", ""),
+        tuple("Test", "Test"),
+        tuple("The answer is 42.", "The answer is %d.", 42),
+        tuple("Hello, my name is Inigo Montoya", "Hello, my name is %s %s...",
+            "Inigo", "Montoya")
+        );
+
+    foreach (t; tests)
+    {
+        auto f = pipe();
+        immutable output = t[0];
+        char[output.length] buf;
+        f.writeEnd.printf(t[1 .. $]);
+        assert(f.readEnd.read(buf) == buf.length);
+        assert(buf == output);
+    }
 }
 
 /**
  * Like $(D writef), but also writes a new line.
  */
-@property size_t printfln(T...)(Sink sink, string format, auto ref T args)
+void printfln(T...)(Sink sink, string format, auto ref T args)
 {
-    // TODO
-    return 0;
+    sink.printf(forward!(format, args));
+    sink.print('\n');
 }
 
 /// Ditto
-@property size_t printfln(T...)(string format, auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink))
+void printfln(T...)(string format, auto ref T args)
 {
-    import io.file.stdio : stdout;
-    import std.algorithm : forward;
-    return stdout.printfln(forward!(format, args));
+    stdout.printfln(forward!(format, args));
 }
 
 /**

@@ -116,7 +116,7 @@ struct ByBlock(T)
         bool _empty = false;
     }
 
-    //@disable this(this);
+    @disable this(this);
 
     this(Source source)
     {
@@ -190,10 +190,10 @@ unittest
     ];
 
     auto f = tempFile;
-    f.write(data);
+    f.put(data);
     f.position = 0;
 
-    assert(equal(data, f.byBlock!Data));
+    assert(f.byBlock!Data.equal(data));
     assert(f.byBlock!Data.empty);
 }
 
@@ -240,8 +240,8 @@ struct ByDelimiter(T, Delimiter)
     {
         import std.array : Appender;
 
-        // Holds the current line
-        Appender!(T[]) _line;
+        // Holds the current region
+        Appender!(T[]) _region;
 
         // Iterates over the stream in small blocks
         ByBlock!T _blocks;
@@ -249,7 +249,7 @@ struct ByDelimiter(T, Delimiter)
         // Are we there yet?
         bool _empty = false;
 
-        // Character or sequence of characters that terminates a line.
+        // Character or sequence of characters that terminates a region.
         immutable Delimiter _delimiter;
     }
 
@@ -266,7 +266,7 @@ struct ByDelimiter(T, Delimiter)
 
     /*
      * Finds the length of the delimiter relative to the size of a single
-     * element in the line.
+     * element in the region.
      */
     private @property size_t delimiterLength() const pure nothrow
     {
@@ -282,12 +282,12 @@ struct ByDelimiter(T, Delimiter)
         }
         else
         {
-            static assert("Unable to find length of line delimiter");
+            static assert("Unable to find the length of the delimiter");
         }
     }
 
     /**
-     * Reads the next line.
+     * Reads the next region.
      */
     void popFront()
     {
@@ -299,7 +299,7 @@ struct ByDelimiter(T, Delimiter)
             if (empty) throw new RangeError();
         }
 
-        _line.clear();
+        _region.clear();
 
         if (_blocks.empty)
         {
@@ -307,17 +307,21 @@ struct ByDelimiter(T, Delimiter)
             return;
         }
 
-        foreach (immutable ch; _blocks)
+        // Adds elements to the region until it finds the delimiter.
+        // Not using foreach because it tries to make a copy of the range.
+        while (!_blocks.empty)
         {
-            _line.put(ch);
+            _region.put(_blocks.front);
 
-            if (_line.data.endsWith(_delimiter))
+            if (_region.data.endsWith(_delimiter))
             {
-                // Truncate the line to not include the delimiter
+                // Truncate the region to not include the delimiter
                 // FIXME: Handle arrays and ranges of delimiters
-                _line.shrinkTo(_line.data.length - delimiterLength);
+                _region.shrinkTo(_region.data.length - delimiterLength);
                 break;
             }
+
+            _blocks.popFront();
         }
 
         // popFront is not called when the loop exits, so we call it here.
@@ -325,7 +329,7 @@ struct ByDelimiter(T, Delimiter)
     }
 
     /**
-     * Gets the current line in the stream.
+     * Gets the current region in the stream.
      */
     const(T)[] front()
     {
@@ -335,7 +339,7 @@ struct ByDelimiter(T, Delimiter)
             if (empty) throw new RangeError();
         }
 
-        return _line.data;
+        return _region.data;
     }
 
     /**
