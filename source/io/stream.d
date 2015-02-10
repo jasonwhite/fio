@@ -110,6 +110,15 @@ interface Sink
 
         return bytesWritten;
     }
+
+    /// Ditto
+    final size_t writeExactly(T)(const auto ref T value)
+    {
+        writeExactly((&value)[0 .. 1]);
+    }
+
+    /// Ditto
+    alias put = writeExactly;
 }
 
 /**
