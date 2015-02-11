@@ -10,3 +10,4 @@ public import io.file.stream;
 public import io.file.mmap;
 public import io.file.pipe;
 public import io.file.stdio;
+public import io.file.temp;

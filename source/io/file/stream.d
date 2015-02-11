@@ -24,7 +24,7 @@
  * ---
  * Note that the file handle is closed when garbage is collected. For design
  * simplicity, there is no $(D close()) function. If deterministic destruction
- * is required, use $(D scoped!File).
+ * is required, use $(D scoped!File) or call $(object.destroy()).
  */
 module io.file.stream;
 

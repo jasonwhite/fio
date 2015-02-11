@@ -2,6 +2,8 @@
  * Copyright: Copyright Jason White, 2015
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
+ *
+ * TODO: Get this working on Windows.
  */
 module io.file.mmap;
 
@@ -35,15 +37,15 @@ else
  * a slice of memory. For many use cases, it is a very efficient means of
  * accessing a file.
  */
-final class MemoryMap
+final class MemoryMap(T)
 {
     // Memory mapped data.
-    void[] data;
+    T[] data;
+
+    alias data this;
 
     version (Windows)
         private HANDLE fileMap = null;
-
-    alias data this;
 
     /**
      * Maps the contents of the specified file into memory.
@@ -74,7 +76,7 @@ final class MemoryMap
         version (Posix)
         {
             if (length == 0)
-                length = file.length;
+                length = file.length/T.sizeof;
 
             // POSIX does not allow the file to be empty. mmap will catch this
             // error as "Invalid argument", but since this is a common-enough
@@ -83,9 +85,9 @@ final class MemoryMap
 
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 
-            void *p = mmap(
+            auto p = cast(T*)mmap(
                 address,                // Preferred address
-                length,                 // Length of the memory map
+                length * T.sizeof,      // Length of the memory map
                 access.protectionFlags, // Protection flags
                 flags,                  // Mapping flags
                 file.handle,            // File descriptor
@@ -102,14 +104,6 @@ final class MemoryMap
             //auto fileMapping = CreateFileMappingA(file.handle, null, );
             static assert(false, "Implement me!");
         }
-    }
-
-    /**
-     * Checks if the file is mapped.
-     */
-    @property bool isMapped() const pure nothrow
-    {
-        return data !is null;
     }
 
     /**
@@ -134,12 +128,12 @@ final class MemoryMap
      */
     ~this()
     {
-        if (!isMapped) return;
+        if (data is null) return;
 
         version (Posix)
         {
             sysEnforce(
-                munmap(data.ptr, data.length) == 0,
+                munmap(data.ptr, data.length * T.sizeof) == 0,
                 "Failed to unmap memory"
                 );
         }
@@ -166,13 +160,11 @@ final class MemoryMap
      * Synchronously writes any pending changes to the file on the file system.
      */
     void flush()
-    in { assert(isMapped); }
-    body
     {
         version (Posix)
         {
             sysEnforce(
-                msync(data.ptr, data.length, MS_SYNC) == 0,
+                msync(data.ptr, data.length * T.sizeof, MS_SYNC) == 0,
                 "Failed to flush memory map"
                 );
         }
@@ -180,7 +172,7 @@ final class MemoryMap
         {
             // TODO: Make this synchronous
             sysEnforce(
-                FlushViewOfFile(data.ptr, data.length) != 0,
+                FlushViewOfFile(data.ptr, data.length * T.sizeof) != 0,
                 "Failed to flush memory map"
                 );
         }
@@ -190,20 +182,18 @@ final class MemoryMap
      * Asynchronously writes any pending changes to the file on the file system.
      */
     void flushAsync()
-    in { assert(isMapped); }
-    body
     {
         version (Posix)
         {
             sysEnforce(
-                msync(data.ptr, data.length, MS_ASYNC) == 0,
+                msync(data.ptr, data.length * T.sizeof, MS_ASYNC) == 0,
                 "Failed to flush memory map"
                 );
         }
         else version (Windows)
         {
             sysEnforce(
-                FlushViewOfFile(data.ptr, data.length) != 0,
+                FlushViewOfFile(data.ptr, data.length * T.sizeof) != 0,
                 "Failed to flush memory map"
                 );
         }
@@ -213,11 +203,11 @@ final class MemoryMap
 /**
  * Convenience function for creating a memory map.
  */
-MemoryMap memoryMap(File file, Access access = Access.read,
-        size_t length = 0, File.Offset start = 0, bool share = true,
-        void* address = null)
+auto memoryMap(T)(File file, Access access = Access.read,
+    size_t length = 0, File.Offset start = 0, bool share = true,
+    void* address = null)
 {
-    return new MemoryMap(file, access, length, start, share, address);
+    return new MemoryMap!T(file, access, length, start, share, address);
 }
 
 ///
@@ -232,20 +222,28 @@ unittest
         auto f = new File(tf.name, FileFlags.readWriteEmpty);
         f.length = newData.length;
 
-        auto map = f.memoryMap(Access.readWrite);
-        auto data = cast(char[])map;
+        auto map = f.memoryMap!char(Access.readWrite);
+        assert(map.length == newData.length);
 
-        data[0 .. newData.length] = newData[];
+        //map[0 .. newData.length] = newData[];
+        map[] = newData[];
 
-        assert(data[0 .. newData.length] == newData[]);
+        assert(map[0 .. newData.length] == newData[]);
     }
 
     // Read the file back in
     {
-        auto map = new File(tf.name, FileFlags.readExisting).memoryMap();
-        auto data = cast(char[])map;
-        assert(data[0 .. newData.length] == newData[]);
+        auto f = new File(tf.name, FileFlags.readExisting);
+        auto map = f.memoryMap!char(Access.read);
+        assert(map.length == newData.length);
+        assert(map[0 .. newData.length] == newData[]);
     }
+}
+
+unittest
+{
+    import std.range : ElementType;
+    static assert(is(ElementType!(MemoryMap!size_t) == size_t));
 }
 
 unittest
@@ -256,5 +254,35 @@ unittest
 
     auto f = new File(tf.name, FileFlags.readWriteEmpty);
     assert(f.length == 0);
-    assert(collectException!SysException(f.memoryMap(Access.readWrite)));
+    assert(collectException!SysException(f.memoryMap!char(Access.readWrite)));
+}
+
+unittest
+{
+    import io.file.temp;
+
+    immutable size_t[] data = [4, 8, 15, 16, 23, 42];
+
+    auto f = tempFile();
+    f.length = data.length * size_t.sizeof;
+
+    auto map = f.memoryMap!size_t();
+    assert(map.length == data.length);
+}
+
+unittest
+{
+    import io.file.temp;
+    import std.parallelism, std.random;
+
+    immutable N = 1024;
+
+    auto f = tempFile();
+    f.length = size_t.sizeof * N;
+
+    auto map = f.memoryMap!size_t(Access.readWrite);
+    assert(map.length == N);
+
+    foreach (i, ref e; parallel(map.data))
+        e = uniform!"[]"(size_t.min, size_t.max);
 }

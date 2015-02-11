@@ -6,10 +6,9 @@ version (unittest)
 }
 else
 {
-    import io.file.stream, io.file.mmap, io.file.temp;
+    import io;
     import std.datetime, std.random;
     import std.parallelism;
-    import stdio = std.stdio;
 
     // Creates a 1 GiB file containing random data.
     // Takes ~2 seconds on my machine.
@@ -20,12 +19,11 @@ else
         auto f = tempFile();
         f.length = 1024^^3; // 1 GiB
 
-        auto map = f.memoryMap(Access.readWrite);
-        auto data = cast(size_t[])map;
+        auto map = f.memoryMap!size_t(Access.readWrite);
 
-        foreach (i, ref e; parallel(data))
+        foreach (i, ref e; parallel(map.data))
             e = uniform!"[]"(size_t.min, size_t.max);
 
-        stdio.writeln("Time Taken: ", cast(Duration)sw.peek);
+        println("Time Taken: ", cast(Duration)sw.peek);
     }
 }
