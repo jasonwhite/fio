@@ -4,6 +4,19 @@
  * Authors:   Jason White
  *
  * TODO: Get this working on Windows.
+ *
+ * Synopsis:
+ * ---
+ * // Creates a 1 GiB file containing random data.
+ * import io.file;
+ * import std.parallelism : parallel;
+ * auto f = new File("big_random_file.dat", FileFlags.writeNew);
+ * f.length = 1024^^3; // 1 GiB
+ *
+ * auto map = f.memoryMap!size_t(Access.write);
+ * foreach (i, ref e; parallel(map[]))
+ *     e = uniform!"[]"(size_t.min, size_t.max);
+ * ---
  */
 module io.file.mmap;
 
@@ -77,11 +90,6 @@ final class MemoryMap(T)
         {
             if (length == 0)
                 length = file.length/T.sizeof;
-
-            // POSIX does not allow the file to be empty. mmap will catch this
-            // error as "Invalid argument", but since this is a common-enough
-            // case, we handle it here with a better error message.
-            sysEnforce(length != 0, "Cannot map empty file.");
 
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 
@@ -198,6 +206,10 @@ final class MemoryMap(T)
                 );
         }
     }
+
+    // Disable appends. It is possible to use mremap() on Linux to extend (or
+    // contract) the length of the map. However, this is not a portable feature.
+    @disable void opOpAssign(string op = "~")(const(T)[] rhs);
 }
 
 /**
@@ -225,7 +237,6 @@ unittest
         auto map = f.memoryMap!char(Access.readWrite);
         assert(map.length == newData.length);
 
-        //map[0 .. newData.length] = newData[];
         map[] = newData[];
 
         assert(map[0 .. newData.length] == newData[]);
@@ -261,13 +272,15 @@ unittest
 {
     import io.file.temp;
 
-    immutable size_t[] data = [4, 8, 15, 16, 23, 42];
+    immutable int[] data = [4, 8, 15, 16, 23, 42];
 
     auto f = tempFile();
-    f.length = data.length * size_t.sizeof;
+    f.length = data.length * int.sizeof;
 
-    auto map = f.memoryMap!size_t();
-    assert(map.length == data.length);
+    auto map = f.memoryMap!int(Access.readWrite);
+    map[] = data;
+    assert(map[] == data);
+    assert(map ~ [100, 200] == data ~ [100, 200]);
 }
 
 unittest
@@ -283,6 +296,6 @@ unittest
     auto map = f.memoryMap!size_t(Access.readWrite);
     assert(map.length == N);
 
-    foreach (i, ref e; parallel(map.data))
+    foreach (i, ref e; parallel(map[]))
         e = uniform!"[]"(size_t.min, size_t.max);
 }

@@ -19,9 +19,9 @@ else
         auto f = tempFile();
         f.length = 1024^^3; // 1 GiB
 
-        auto map = f.memoryMap!size_t(Access.readWrite);
+        auto map = f.memoryMap!size_t(Access.write);
 
-        foreach (i, ref e; parallel(map.data))
+        foreach (i, ref e; parallel(map[]))
             e = uniform!"[]"(size_t.min, size_t.max);
 
         println("Time Taken: ", cast(Duration)sw.peek);
