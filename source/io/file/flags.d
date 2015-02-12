@@ -93,7 +93,8 @@ struct FileFlags
         FileFlags writeExisting = FileFlags(Mode.open, Access.write);
 
         /**
-         * A new file is created with write access.
+         * A new file is created with write access. Fails if the file already
+         * exists.
          */
         FileFlags writeNew = FileFlags(Mode.create, Access.write);
 
@@ -114,7 +115,8 @@ struct FileFlags
         FileFlags readWriteExisting = FileFlags(Mode.open, Access.readWrite);
 
         /**
-         * A new file is created with read/write access.
+         * A new file is created with read/write access. Fails if the file
+         * already exists.
          */
         FileFlags readWriteNew = FileFlags(Mode.create, Access.readWrite);
 

@@ -11,7 +11,7 @@
  * // Open a new file in read/write mode. Throws an exception if the file exists.
  * auto f = new File("myfile", FileFlags.readWriteNew);
  *
- * // Write an arbitrary arrays to the stream.
+ * // Write an arbitrary array to the stream.
  * f.write("Hello world!");
  *
  * // Seek to the beginning.
@@ -24,7 +24,7 @@
  * ---
  * Note that the file handle is closed when garbage is collected. For design
  * simplicity, there is no $(D close()) function. If deterministic destruction
- * is required, use $(D scoped!File) or call $(object.destroy()).
+ * is required, use $(D scoped!File) or call $(D object.destroy()).
  */
 module io.file.stream;
 
