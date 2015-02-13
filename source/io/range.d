@@ -24,6 +24,10 @@ struct ByChunk
         size_t _valid;
     }
 
+    /**
+     * Copying is disabled because the current position in the stream cannot be
+     * saved.
+     */
     @disable this(this);
 
     this(Source source, size_t size = 4096)
@@ -116,6 +120,10 @@ struct ByBlock(T)
         bool _empty = false;
     }
 
+    /**
+     * Copying is disabled because the current position in the stream cannot be
+     * saved.
+     */
     @disable this(this);
 
     this(Source source)
@@ -262,6 +270,10 @@ struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
         const Separator _separator;
     }
 
+    /**
+     * Copying is disabled because the current position in the stream cannot be
+     * saved.
+     */
     @disable this(this);
 
     this(Source source, const Separator separator)
