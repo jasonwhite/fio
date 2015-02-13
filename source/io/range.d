@@ -24,12 +24,6 @@ struct ByChunk
         size_t _valid;
     }
 
-    /**
-     * Copying is disabled because the current position in the stream cannot be
-     * saved.
-     */
-    @disable this(this);
-
     this(Source source, size_t size = 4096)
     {
         this(source, new void[](size));
@@ -119,12 +113,6 @@ struct ByBlock(T)
         // Are we there yet?
         bool _empty = false;
     }
-
-    /**
-     * Copying is disabled because the current position in the stream cannot be
-     * saved.
-     */
-    @disable this(this);
 
     this(Source source)
     {
@@ -249,6 +237,10 @@ unittest
     static assert(isSplitFunction!(endsWithSeparator, char, string));
 }
 
+/**
+ * Splits a stream using a separator. The separator can be a single element or a
+ * bidirectional range of elements.
+ */
 struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
     if (isSplitFunction!(splitFn, T, Separator))
 {
@@ -269,12 +261,6 @@ struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
         // Element or range that separates regions.
         const Separator _separator;
     }
-
-    /**
-     * Copying is disabled because the current position in the stream cannot be
-     * saved.
-     */
-    @disable this(this);
 
     this(Source source, const Separator separator)
     {
@@ -358,6 +344,15 @@ version (none) unittest
 
 /**
  * Convenience function for returning a stream splitter.
+ *
+ * Example:
+ * ---
+ * // Reads and prints words.
+ * import io;
+ * import std.algorithm : filter;
+ * foreach (word; stdin.splitter!char(' ').filter!(w => w != ""))
+ *     println(word);
+ * ---
  */
 auto splitter(T = char, Separator)(Source source, Separator separator)
 {
@@ -405,6 +400,7 @@ version (unittest)
 
 unittest
 {
+    // Test different types of separators.
     immutable lines = [
         "This is the first line",
         "",
@@ -418,4 +414,22 @@ unittest
     testSplitter(lines, "\r\n");
     testSplitter(lines, "\n\n");
     testSplitter(lines, "||||");
+}
+
+unittest
+{
+    // Test combining with filter
+    import io.file.temp;
+    import std.algorithm : filter, equal;
+
+    immutable data = "The    quick brown  fox jumps over the lazy dog    ";
+    immutable result = [
+        "The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"
+    ];
+
+    auto f = tempFile();
+    f.writeExactly(data);
+    f.position = 0;
+
+    assert(f.splitter!char(' ').filter!(w => w != "").equal(result));
 }
