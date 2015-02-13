@@ -259,12 +259,12 @@ struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
         bool _empty = false;
 
         // Element or range that separates regions.
-        immutable Separator _separator;
+        const Separator _separator;
     }
 
     @disable this(this);
 
-    this(Source source, Separator separator)
+    this(Source source, const Separator separator)
     {
         _blocks = source.byBlock!T;
         _separator = separator;
@@ -329,6 +329,21 @@ struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
     }
 }
 
+version (none) unittest
+{
+    import std.range;
+
+    static assert(isInputRange!(Splitter!(char, char)));
+    static assert(isInputRange!(Splitter!(char, string)));
+    static assert(isInputRange!(Splitter!(int, int)));
+    static assert(isInputRange!(Splitter!(int, int[])));
+
+    static assert(!isOutputRange!(Splitter!(char, char)));
+    static assert(!isForwardRange!(Splitter!(char, char)));
+    static assert(!isBidirectionalRange!(Splitter!(char, char)));
+    static assert(!isRandomAccessRange!(Splitter!(char, char)));
+}
+
 /**
  * Convenience function for returning a stream splitter.
  */
@@ -339,36 +354,45 @@ auto splitter(T = char, Separator)(Source source, Separator separator)
 
 unittest
 {
+    // Test an empty split
     import io.file.temp;
-    import std.array : join;
     import std.algorithm : equal;
+    assert(tempFile().splitter!char('\n').equal(string[].init));
+}
 
-    immutable lines = [
-        "This is the first line",
-        "",
-        "That was a blank line.",
-        "This is the penultimate line!",
-        "This is the last line.",
-    ];
+version (unittest)
+{
+    void testSplitter(T, Separator)(const T[][] regions, Separator separator)
+    {
+        import io.file.temp;
+        import std.array : join;
+        import std.algorithm : equal;
+        import std.traits : isArray;
 
-    immutable text = lines.join("\n");
+        static if (isArray!Separator)
+            auto joined = regions.join(separator);
+        else
+            auto joined = regions.join([separator]);
 
-    auto f = tempFile();
-    f.writeExactly(text);
+        auto f = tempFile();
+        f.writeExactly(joined);
+        f.position = 0;
 
-    f.position = 0;
-    assert(f.splitter!char('\n').equal(lines));
+        assert(f.splitter!T(separator).equal(regions));
+        assert(f.position == joined.length * T.sizeof);
 
-    f.position = 0;
-    assert(f.splitter!char("\n").equal(lines));
+        // Add a trailing separator at the end of the file
+        static if (isArray!Separator)
+            f.writeExactly(separator);
+        else
+            f.writeExactly([separator]);
+        f.position = 0;
+        assert(f.splitter!T(separator).equal(regions));
+    }
 }
 
 unittest
 {
-    import io.file.temp;
-    import std.array : join;
-    import std.algorithm : equal;
-
     immutable lines = [
         "This is the first line",
         "",
@@ -377,10 +401,9 @@ unittest
         "This is the last line.",
     ];
 
-    immutable text = lines.join("\r\n");
-
-    auto f = tempFile();
-    f.writeExactly(text);
-    f.position = 0;
-    assert(f.splitter!char("\r\n").equal(lines));
+    testSplitter(lines, '\n');
+    testSplitter(lines, "\n");
+    testSplitter(lines, "\r\n");
+    testSplitter(lines, "\n\n");
+    testSplitter(lines, "||||");
 }
