@@ -197,103 +197,85 @@ unittest
     assert(f.byBlock!Data.empty);
 }
 
-/*
- * Checks if the given delimiter is a valid delimiter for an element of type T.
- */
-template isValidDelimiter(Delimiter, T)
+// Checks if the region ends with a single element separator.
+static private size_t endsWithSeparator(T, Separator)
+    (const(T)[] region, const Separator separator)
+    if (is(typeof(T.init == Separator.init) : bool))
 {
-    import std.traits : isScalarType, isArray, Unqual;
-    import std.range : ElementEncodingType;
-
-    static if (isScalarType!Delimiter)
-    {
-        enum isValidDelimiter = true;
-    }
-    else static if (isArray!Delimiter)
-    {
-        static if (is(Unqual!(ElementEncodingType!Delimiter) == T))
-            enum isValidDelimiter = true;
-        else
-            enum isValidDelimiter = false;
-    }
-    else
-        enum isValidDelimiter = false;
+    import std.range : back;
+    return region.back == separator;
 }
+
+import std.range : back, isBidirectionalRange;
+
+// Checks if the region ends with a range of elements.
+static private size_t endsWithSeparator(T, Separator)
+    (const(T)[] region, Separator sep)
+    if (isBidirectionalRange!Separator &&
+        is(typeof(T.init == sep.back.init) : bool))
+{
+    import std.range : back, empty, popBack;
+
+    size_t common = 0;
+
+    while (!region.empty && !sep.empty && region.back == sep.back)
+    {
+        region.popBack();
+        sep.popBack();
+
+        ++common;
+    }
+
+    return sep.empty ? common : 0;
+}
+
+/**
+ * Checks if the given function can be used with $(D Splitter).
+ */
+enum isSplitFunction(alias fn, T, Separator) =
+    is(typeof(fn(T[].init, Separator.init)));
 
 unittest
 {
-    static assert( isValidDelimiter!(char, char));
-    static assert( isValidDelimiter!(string, char));
-    static assert( isValidDelimiter!(dstring, dchar));
-    static assert(!isValidDelimiter!(dstring, wchar));
-    static assert(!isValidDelimiter!(dstring, char));
-    static assert(!isValidDelimiter!(wstring, char));
-    static assert( isValidDelimiter!(dchar, char));
-    static assert( isValidDelimiter!(int, char));
-    static assert( isValidDelimiter!(short, int));
+    static assert(isSplitFunction!(endsWithSeparator, char, char));
+    static assert(isSplitFunction!(endsWithSeparator, char, string));
 }
 
-struct ByDelimiter(T, Delimiter)
-    if (isValidDelimiter!(Delimiter, T))
+struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
+    if (isSplitFunction!(splitFn, T, Separator))
 {
     private
     {
         import std.array : Appender;
 
-        // Holds the current region
-        Appender!(T[]) _region;
+        alias Region = Appender!(T[]);
 
-        // Iterates over the stream in small blocks
+        // The current region
+        Region _region;
+
+        // Block iterator
         ByBlock!T _blocks;
 
-        // Are we there yet?
         bool _empty = false;
 
-        // Character or sequence of characters that terminates a region.
-        immutable Delimiter _delimiter;
+        // Element or range that separates regions.
+        immutable Separator _separator;
     }
 
     @disable this(this);
 
-    this(Source source, Delimiter delimiter)
+    this(Source source, Separator separator)
     {
         _blocks = source.byBlock!T;
-        _delimiter = delimiter;
+        _separator = separator;
 
         // Prime the cannons
         popFront();
     }
 
-    /*
-     * Finds the length of the delimiter relative to the size of a single
-     * element in the region.
-     */
-    private @property size_t delimiterLength() const pure nothrow
-    {
-        import std.traits : isScalarType, isArray;
-
-        static if (isScalarType!Delimiter)
-        {
-            return 1;
-        }
-        else static if (isArray!Delimiter)
-        {
-            return _delimiter.length;
-        }
-        else
-        {
-            static assert("Unable to find the length of the delimiter");
-        }
-    }
-
-    /**
-     * Reads the next region.
-     */
     void popFront()
     {
-        import std.algorithm : endsWith;
-
-        version(assert)
+        version (assert)
         {
             import core.exception : RangeError;
             if (empty) throw new RangeError();
@@ -307,24 +289,20 @@ struct ByDelimiter(T, Delimiter)
             return;
         }
 
-        // Adds elements to the region until it finds the delimiter.
-        // Not using foreach because it tries to make a copy of the range.
         while (!_blocks.empty)
         {
             _region.put(_blocks.front);
 
-            if (_region.data.endsWith(_delimiter))
+            if (auto len = splitFn(_region.data, _separator))
             {
-                // Truncate the region to not include the delimiter
-                // FIXME: Handle arrays and ranges of delimiters
-                _region.shrinkTo(_region.data.length - delimiterLength);
+                assert(_region.data.length >= len);
+                _region.shrinkTo(_region.data.length - len);
                 break;
             }
 
             _blocks.popFront();
         }
 
-        // popFront is not called when the loop exits, so we call it here.
         _blocks.popFront();
     }
 
@@ -333,7 +311,7 @@ struct ByDelimiter(T, Delimiter)
      */
     const(T)[] front()
     {
-        version(assert)
+        version (assert)
         {
             import core.exception : RangeError;
             if (empty) throw new RangeError();
@@ -343,49 +321,28 @@ struct ByDelimiter(T, Delimiter)
     }
 
     /**
-     * Returns true if there are no more lines to read from the stream.
+     * Returns true if there are no more regions in the splitter.
      */
-    bool empty()
+    bool empty() const pure nothrow
     {
         return _empty;
     }
 }
 
 /**
- * Convenience function for returning a delimiter range.
+ * Convenience function for returning a stream splitter.
  */
-@property auto byDelimiter(T = char, Delimiter)
-    (Source source, Delimiter delimiter)
+auto splitter(T = char, Separator)(Source source, Separator separator)
 {
-    return ByDelimiter!(T, Delimiter)(source, delimiter);
-}
-
-version (unittest)
-{
-    void testByDelimiter(const string[] lines, string delimiter)
-    {
-        import io.file.temp;
-        import std.array : join;
-        import std.algorithm : equal;
-
-        immutable text = lines.join(delimiter);
-
-        auto f = tempFile();
-        f.writeExactly(text);
-        f.position = 0;
-
-        assert(f.byDelimiter(delimiter).equal(lines));
-        assert(f.position == text.length);
-
-        // Add a trailing terminator at the end of the file.
-        assert(f.write(delimiter) == delimiter.length);
-        f.position = 0;
-        assert(f.byDelimiter(delimiter).equal(lines));
-    }
+    return Splitter!(T, Separator)(source, separator);
 }
 
 unittest
 {
+    import io.file.temp;
+    import std.array : join;
+    import std.algorithm : equal;
+
     immutable lines = [
         "This is the first line",
         "",
@@ -394,6 +351,36 @@ unittest
         "This is the last line.",
     ];
 
-    testByDelimiter(lines, "\n");
-    testByDelimiter(lines, "\r\n");
+    immutable text = lines.join("\n");
+
+    auto f = tempFile();
+    f.writeExactly(text);
+
+    f.position = 0;
+    assert(f.splitter!char('\n').equal(lines));
+
+    f.position = 0;
+    assert(f.splitter!char("\n").equal(lines));
+}
+
+unittest
+{
+    import io.file.temp;
+    import std.array : join;
+    import std.algorithm : equal;
+
+    immutable lines = [
+        "This is the first line",
+        "",
+        "That was a blank line.",
+        "This is the penultimate line!",
+        "This is the last line.",
+    ];
+
+    immutable text = lines.join("\r\n");
+
+    auto f = tempFile();
+    f.writeExactly(text);
+    f.position = 0;
+    assert(f.splitter!char("\r\n").equal(lines));
 }

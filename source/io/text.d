@@ -162,8 +162,8 @@ void printfln(T...)(string format, auto ref T args)
  * Convenience function for returning a delimiter range that iterates over
  * lines.
  */
-@property auto byLine(T)(Source source)
+@property auto byLine(T = char)(Source source)
 {
-    import io.range : ByDelimiter;
-    return ByDelimiter!(T, dchar)(source, '\n');
+    import io.range : splitter;
+    return splitter!T(source, '\n');
 }
