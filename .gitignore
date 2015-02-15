@@ -4,3 +4,4 @@
 /io
 .dub/*
 docs.json
+libio.a
