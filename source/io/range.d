@@ -11,11 +11,12 @@ import io.stream;
 /**
  * Range that reads up to a fixed size chunk of data from a stream at a time.
  */
-struct ByChunk
+struct ByChunk(Stream)
+    if (isSource!Stream)
 {
     private
     {
-        Source _source;
+        Stream _source;
 
         // Buffer to read in the data into.
         void[] _buffer;
@@ -24,12 +25,12 @@ struct ByChunk
         size_t _valid;
     }
 
-    this(Source source, size_t size = 4096)
+    this(Stream source, size_t size = 4096)
     {
         this(source, new void[](size));
     }
 
-    this(Source source, void[] buffer)
+    this(Stream source, void[] buffer)
     {
         _source = source;
         _buffer = buffer;
@@ -64,15 +65,17 @@ struct ByChunk
 /**
  * Convenience function for creating $(D ByChunk) range over a stream.
  */
-@property ByChunk byChunk(Source source, size_t size = 4096)
+auto byChunk(Stream)(Stream stream, size_t size = 4096)
+    if (isSource!Stream)
 {
-    return ByChunk(source, size);
+    return ByChunk!Stream(stream, size);
 }
 
 /// Ditto
-@property ByChunk byChunk(Source source, void[] buffer)
+auto byChunk(Stream)(Stream stream, void[] buffer)
+    if (isSource!Stream)
 {
-    return ByChunk(source, buffer);
+    return ByChunk!Stream(stream, buffer);
 }
 
 unittest
@@ -101,11 +104,12 @@ unittest
  * should not be mixed with the underlying stream without first seeking to a
  * specific location in the stream.
  */
-struct ByBlock(T)
+struct ByBlock(T, Stream)
+    if (isSource!Stream)
 {
     private
     {
-        Source _source;
+        Stream _source;
 
         // The current block in the stream.
         T _current;
@@ -114,7 +118,7 @@ struct ByBlock(T)
         bool _empty = false;
     }
 
-    this(Source source)
+    this(Stream source)
     {
         _source = source;
 
@@ -164,9 +168,10 @@ struct ByBlock(T)
 /**
  * Helper function for constructing a block range.
  */
-@property auto byBlock(T)(Source source)
+@property auto byBlock(T, Stream)(Stream stream)
+    if (isSource!Stream)
 {
-    return ByBlock!T(source);
+    return ByBlock!(T, Stream)(stream);
 }
 
 unittest
@@ -241,8 +246,8 @@ unittest
  * Splits a stream using a separator. The separator can be a single element or a
  * bidirectional range of elements.
  */
-struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
-    if (isSplitFunction!(splitFn, T, Separator))
+struct Splitter(T, Separator, Stream, alias splitFn = endsWithSeparator!(T, Separator))
+    if (isSource!Stream && isSplitFunction!(splitFn, T, Separator))
 {
     private
     {
@@ -254,7 +259,7 @@ struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
         Region _region;
 
         // Block iterator
-        ByBlock!T _blocks;
+        ByBlock!(T, Stream) _blocks;
 
         bool _empty = false;
 
@@ -262,9 +267,9 @@ struct Splitter(T, Separator, alias splitFn = endsWithSeparator!(T, Separator))
         const Separator _separator;
     }
 
-    this(Source source, const Separator separator)
+    this(Stream source, const Separator separator)
     {
-        _blocks = source.byBlock!T;
+        _blocks = source.byBlock!(T, Stream);
         _separator = separator;
 
         // Prime the cannons
@@ -354,9 +359,10 @@ version (none) unittest
  *     println(word);
  * ---
  */
-auto splitter(T = char, Separator)(Source source, Separator separator)
+auto splitter(T = char, Separator, Stream)(Stream stream, Separator separator)
+    if (isSource!Stream)
 {
-    return Splitter!(T, Separator)(source, separator);
+    return Splitter!(T, Separator, Stream)(stream, separator);
 }
 
 unittest

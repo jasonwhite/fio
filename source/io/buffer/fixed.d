@@ -11,9 +11,13 @@ module io.buffer.fixed;
 import io.stream;
 import io.buffer.traits;
 
-class FixedBuffer(Stream) : Stream
-    if (isBufferable!Stream)
+private struct FixedBufferImpl(Stream)
+    if (is(Stream == struct) && isBufferable!Stream)
 {
+    Stream stream;
+
+    alias stream this;
+
     // Buffer to store the data to be read or written.
     private void[] _buffer;
 
@@ -21,13 +25,15 @@ class FixedBuffer(Stream) : Stream
     // has been written to the buffer but not flushed.
     private size_t _position;
 
+    @disable this(this);
+
     /**
      * Forwards arguments to super class.
      */
     this(T...)(auto ref T args)
     {
         import std.algorithm : forward;
-        super(forward!args);
+        stream = Stream(forward!args);
         _buffer.length = 8192;
     }
 
@@ -37,7 +43,7 @@ class FixedBuffer(Stream) : Stream
      */
     ~this()
     {
-        static if (is(Stream : Sink))
+        static if (isSink!Stream)
             flush();
     }
 
@@ -49,7 +55,7 @@ class FixedBuffer(Stream) : Stream
     {
         if (_position > 0) return;
 
-        static if (is(Stream : Source))
+        static if (isSource!Stream)
         {
             if (_valid > 0) return;
         }
@@ -65,7 +71,7 @@ class FixedBuffer(Stream) : Stream
         return _buffer.length;
     }
 
-    static if (is(Stream : Source))
+    static if (isSource!Stream)
     {
         // Last valid position in the buffer. This is 0 if no read data is
         // sitting in the buffer.
@@ -74,7 +80,7 @@ class FixedBuffer(Stream) : Stream
         /**
          * Initiates a read. This handles flushing any data previously written.
          */
-        static if (is(Stream : Sink))
+        static if (isSink!Stream)
         {
             private void beginRead()
             {
@@ -104,7 +110,7 @@ class FixedBuffer(Stream) : Stream
          * Reads data from the stream into the given buffer. The number of bytes
          * read is returned.
          */
-        override size_t read(void[] buf)
+        size_t read(void[] buf)
         {
             beginRead();
 
@@ -116,10 +122,10 @@ class FixedBuffer(Stream) : Stream
 
             // Large read? Get it directly from the stream.
             if (buf.length >= _buffer.length)
-                return satisfied + super.read(buf);
+                return satisfied + stream.read(buf);
 
             // Buffer is empty, fill it back up.
-            immutable bytesRead = super.read(_buffer);
+            immutable bytesRead = stream.read(_buffer);
             _position = 0;
             _valid = bytesRead;
 
@@ -128,13 +134,13 @@ class FixedBuffer(Stream) : Stream
         }
     }
 
-    static if (is(Stream : Sink))
+    static if (isSink!Stream)
     {
         /**
          * Initiates a write. This will handle seeking to the correct position
          * due to a previous read.
          */
-        static if (is(Stream : Source))
+        static if (isSource!Stream)
         {
             private void beginWrite()
             {
@@ -143,7 +149,7 @@ class FixedBuffer(Stream) : Stream
                 // The length of the window indicates how much data hasn't
                 // "really" been read from the stream. Just seek backwards that
                 // distance.
-                super.skip(_position - _valid);
+                stream.skip(_position - _valid);
                 _position = _valid = 0;
             }
         }
@@ -172,7 +178,7 @@ class FixedBuffer(Stream) : Stream
          * Writes the given data to the buffered stream. When the internal
          * buffer is completely filled, it is flushed to the underlying stream.
          */
-        override size_t put(const(void)[] buf)
+        size_t put(const(void)[] buf)
         {
             beginWrite();
 
@@ -187,7 +193,7 @@ class FixedBuffer(Stream) : Stream
 
             // Large write? Push it directly to the stream.
             if (buf.length >= _buffer.length)
-                return satisfied + super.write(buf);
+                return satisfied + stream.write(buf);
 
             // Write the rest.
             return satisfied + writePartial(buf);
@@ -201,18 +207,18 @@ class FixedBuffer(Stream) : Stream
         void flush()
         {
             if (_position > 0)
-                _position -= super.write(_buffer[0 .. _position]);
+                _position -= stream.write(_buffer[0 .. _position]);
         }
     }
 
-    static if (is(Stream : Seekable!SourceSink))
+    static if (isSeekable!Stream)
     {
         /**
          * Seeks to the given position relative to the given starting point.
          */
-        override ptrdiff_t seekTo(ptrdiff_t offset, From from = From.start)
+        ptrdiff_t seekTo(ptrdiff_t offset, From from = From.start)
         {
-            static if (is(Stream : Source))
+            static if (isSource!Stream)
             {
                 if (_valid > 0)
                 {
@@ -222,7 +228,7 @@ class FixedBuffer(Stream) : Stream
                         if (_position + offset < _valid)
                         {
                             _position += offset;
-                            return super.position + (_position - _valid);
+                            return stream.position + (_position - _valid);
                         }
                     }
 
@@ -231,15 +237,18 @@ class FixedBuffer(Stream) : Stream
                 }
             }
 
-            static if (is(Stream : Sink))
+            static if (isSink!Stream)
             {
                 flush();
             }
 
-            return super.seekTo(offset, from);
+            return stream.seekTo(offset, from);
         }
     }
 }
+
+import std.typecons : RefCounted, RefCountedAutoInitialize;
+alias FixedBuffer(Stream) = RefCounted!(FixedBufferImpl!(Stream), RefCountedAutoInitialize.no);
 
 unittest
 {
@@ -259,15 +268,4 @@ unittest
         assert(f.read(buffer) == buffer.length);
         assert(buffer == data);
     }
-}
-
-unittest
-{
-    import io.file.stream;
-    import std.typecons : scoped;
-
-    auto tf = testFile();
-
-    auto f = scoped!(FixedBuffer!File)(tf.name, FileFlags.writeNew);
-    f.write("asdf");
 }

@@ -5,7 +5,7 @@
  */
 module io.buffer.traits;
 
-import io.stream : Source, Sink, SourceSink, Seekable;
+import io.stream.types;
 
 
 /**
@@ -14,8 +14,8 @@ import io.stream : Source, Sink, SourceSink, Seekable;
  * must be buffered, the stream must also be seekable. There are no exceptions
  * to this last rule when buffering.
  */
-enum isBufferable(Stream) = (is(Stream : Source) ^ is(Stream : Sink)) ||
-    is(Stream : Seekable!SourceSink);
+enum isBufferable(Stream) = (isSource!Stream ^ isSink!Stream) ||
+    isSeekable!Stream;
 
 unittest
 {

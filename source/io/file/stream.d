@@ -9,7 +9,7 @@
  * Synopsis:
  * ---
  * // Open a new file in read/write mode. Throws an exception if the file exists.
- * auto f = new File("myfile", FileFlags.readWriteNew);
+ * auto f = File("myfile", FileFlags.readWriteNew);
  *
  * // Write an arbitrary array to the stream.
  * f.write("Hello world!");
@@ -22,9 +22,6 @@
  * f.read(buf);
  * assert(buf == "Hello");
  * ---
- * Note that the file handle is closed when garbage is collected. For design
- * simplicity, there is no $(D close()) function. If deterministic destruction
- * is required, use $(D scoped!File) or call $(D object.destroy()).
  */
 module io.file.stream;
 
@@ -108,7 +105,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 /**
  * A cross-platform wrapper around low-level file operations.
  */
-class File : Seekable!SourceSink
+private struct FileImpl
 {
     // Platform-specific file handle
     version (Posix)
@@ -181,18 +178,18 @@ class File : Seekable!SourceSink
         // Make sure the file does *not* exist
         try .file.remove(tf.name); catch (Exception e) {}
 
-        assert( new File(tf.name, FileFlags.readExisting).ce);
-        assert( new File(tf.name, FileFlags.writeExisting).ce);
-        assert(!new File(tf.name, FileFlags.writeNew).ce);
-        assert(!new File(tf.name, FileFlags.writeAlways).ce);
+        assert( File(tf.name, FileFlags.readExisting).ce);
+        assert( File(tf.name, FileFlags.writeExisting).ce);
+        assert(!File(tf.name, FileFlags.writeNew).ce);
+        assert(!File(tf.name, FileFlags.writeAlways).ce);
 
         // Make sure the file *does* exist.
         .file.write(tf.name, data);
 
-        assert(!new File(tf.name, FileFlags.readExisting).ce);
-        assert(!new File(tf.name, FileFlags.writeExisting).ce);
-        assert( new File(tf.name, FileFlags.writeNew).ce);
-        assert(!new File(tf.name, FileFlags.writeAlways).ce);
+        assert(!File(tf.name, FileFlags.readExisting).ce);
+        assert(!File(tf.name, FileFlags.writeExisting).ce);
+        assert( File(tf.name, FileFlags.writeNew).ce);
+        assert(!File(tf.name, FileFlags.writeAlways).ce);
     }
 
     /**
@@ -222,16 +219,13 @@ class File : Seekable!SourceSink
         _h = h;
     }
 
-    /**
-     * Duplicates the internal file handle and returns a new file object.
-     */
-    typeof(this) dup()
+    this(this)
     {
         version (Posix)
         {
             immutable h = .dup(_h);
             sysEnforce(h != InvalidHandle, "Failed to duplicate handle");
-            return new File(h);
+            _h = h;
         }
         else version (Windows)
         {
@@ -246,7 +240,7 @@ class File : Seekable!SourceSink
                 DUPLICATE_SAME_ACCESS
             );
             sysEnforce(ret, "Failed to duplicate handle");
-            return new File(ret);
+            _h = ret;
         }
     }
 
@@ -254,9 +248,9 @@ class File : Seekable!SourceSink
     {
         auto tf = testFile();
 
-        auto a = new File(tf.name, FileFlags.writeEmpty);
+        auto a = File(tf.name, FileFlags.writeEmpty);
 
-        auto b = a.dup; // Copy
+        auto b = a; // Copy
         b.write("abcd");
 
         assert(a.position == 4);
@@ -267,7 +261,7 @@ class File : Seekable!SourceSink
     {
         // The file handle should only be invalid if the constructor throws an
         // exception.
-        if (_h == InvalidHandle) return;
+        if (!isOpen) return;
 
         version (Posix)
         {
@@ -288,6 +282,11 @@ class File : Seekable!SourceSink
         return _h;
     }
 
+    @property bool isOpen()
+    {
+        return _h != InvalidHandle;
+    }
+
     /**
      * Reads data from the file.
      *
@@ -299,6 +298,8 @@ class File : Seekable!SourceSink
      * the file has been reached.
      */
     size_t read(void[] buf)
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -323,7 +324,7 @@ class File : Seekable!SourceSink
 
         char[data.length] buf;
 
-        auto f = new File(tf.name, FileFlags.readExisting);
+        auto f = File(tf.name, FileFlags.readExisting);
         assert(buf[0 .. f.read(buf)] == data);
     }
 
@@ -337,6 +338,8 @@ class File : Seekable!SourceSink
      * Returns: The number of bytes that were written.
      */
     size_t put(const(void)[] data)
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -363,8 +366,8 @@ class File : Seekable!SourceSink
         immutable data = "\r\n\n\r\n";
         char[data.length] buf;
 
-        assert(new File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
-        assert(new File(tf.name, FileFlags.readExisting).read(buf));
+        assert(File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
+        assert(File(tf.name, FileFlags.readExisting).read(buf));
         assert(buf == data);
     }
 
@@ -379,6 +382,8 @@ class File : Seekable!SourceSink
      *   from   = Optional reference point.
      */
     Offset seekTo(Offset offset, From from = From.start)
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -417,7 +422,7 @@ class File : Seekable!SourceSink
     {
         auto tf = testFile();
 
-        auto f = new File(tf.name, FileFlags.readWriteAlways);
+        auto f = File(tf.name, FileFlags.readWriteAlways);
 
         immutable data = "abcdefghijklmnopqrstuvwxyz";
         assert(f.write(data) == data.length);
@@ -434,6 +439,8 @@ class File : Seekable!SourceSink
      * Gets the size of the file.
      */
     @property Offset length()
+    in { assert(isOpen); }
+    body
     {
         version(Posix)
         {
@@ -454,7 +461,7 @@ class File : Seekable!SourceSink
     unittest
     {
         auto tf = testFile();
-        auto f = new File(tf.name, FileFlags.writeEmpty);
+        auto f = File(tf.name, FileFlags.writeEmpty);
 
         assert(f.length == 0);
 
@@ -473,6 +480,8 @@ class File : Seekable!SourceSink
      * guaranteed to be initialized to zeros.
      */
     @property void length(Offset len)
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -497,7 +506,7 @@ class File : Seekable!SourceSink
     unittest
     {
         auto tf = testFile();
-        auto f = new File(tf.name, FileFlags.writeEmpty);
+        auto f = File(tf.name, FileFlags.writeEmpty);
         assert(f.length == 0);
         assert(f.position == 0);
 
@@ -516,6 +525,8 @@ class File : Seekable!SourceSink
      * Checks if the file is a terminal.
      */
     @property bool isTerminal()
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -591,6 +602,8 @@ class File : Seekable!SourceSink
      */
     void lock(LockType lockType = LockType.readWrite,
         Offset start = 0, Offset length = Offset.max)
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -619,6 +632,8 @@ class File : Seekable!SourceSink
      */
     bool tryLock(LockType lockType = LockType.readWrite,
         Offset start = 0, Offset length = Offset.max)
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -658,6 +673,8 @@ class File : Seekable!SourceSink
     }
 
     void unlock(Offset start = 0, Offset length = Offset.max)
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -679,6 +696,8 @@ class File : Seekable!SourceSink
      * access time).
      */
     void sync()
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -696,6 +715,8 @@ class File : Seekable!SourceSink
      * NOTE: On Windows, this is exactly the same as $(D sync()).
      */
     void syncData()
+    in { assert(isOpen); }
+    body
     {
         version (Posix)
         {
@@ -715,6 +736,8 @@ class File : Seekable!SourceSink
     version (linux)
     {
         size_t copyTo(File other, size_t n = ptrdiff_t.max)
+        in { assert(isOpen && other.isOpen); }
+        body
         {
             immutable written = .sendfile(other._h, _h, null, n);
             sysEnforce(written >= 0, "Failed to copy file.");
@@ -741,6 +764,9 @@ class File : Seekable!SourceSink
         }
     }
 }
+
+import std.typecons;
+alias File = RefCounted!(FileImpl, RefCountedAutoInitialize.no);
 
 version (unittest)
 {

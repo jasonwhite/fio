@@ -8,7 +8,7 @@ module io.file.pipe;
 import io.file.stream;
 
 struct Pipe(F = File)
-    if (is(F == class))
+    if (is(F == struct))
 {
     F readEnd;  // Read end
     F writeEnd; // Write end
@@ -19,7 +19,7 @@ struct Pipe(F = File)
  * read from on the other.
  */
 Pipe!F pipe(F = File)()
-    if (is(F == class))
+    if (is(F == struct))
 {
     version (Posix)
     {
@@ -27,7 +27,7 @@ Pipe!F pipe(F = File)()
 
         int fd[2] = void;
         sysEnforce(pipe(fd) != -1);
-        return Pipe!F(new F(fd[0]), new F(fd[1]));
+        return Pipe!F(F(fd[0]), F(fd[1]));
     }
     else version(Windows)
     {
@@ -35,7 +35,7 @@ Pipe!F pipe(F = File)()
 
         Handle readEnd, writeEnd;
         sysEnforce(CreatePipe(&readEnd, &writeEnd, null, 0));
-        return Pipe!F(new F(readEnd), new F(writeEnd));
+        return Pipe!F(F(readEnd), F(writeEnd));
     }
     else
     {

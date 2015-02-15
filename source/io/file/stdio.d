@@ -35,9 +35,9 @@ shared static this()
     version (Posix)
     {
         import core.sys.posix.unistd : dup;
-        stdin  = new File(dup(0));
-        stdout = new File(dup(1));
-        stderr = new File(dup(2));
+        stdin  = File(dup(0));
+        stdout = File(dup(1));
+        stderr = File(dup(2));
     }
     else version (Windows)
     {

@@ -10,7 +10,7 @@
  * // Creates a 1 GiB file containing random data.
  * import io.file;
  * import std.parallelism : parallel;
- * auto f = new File("big_random_file.dat", FileFlags.writeNew);
+ * auto f = File("big_random_file.dat", FileFlags.writeNew);
  * f.length = 1024^^3; // 1 GiB
  *
  * auto map = f.memoryMap!size_t(Access.write);
@@ -231,7 +231,7 @@ unittest
 
     // Modify the file
     {
-        auto f = new File(tf.name, FileFlags.readWriteEmpty);
+        auto f = File(tf.name, FileFlags.readWriteEmpty);
         f.length = newData.length;
 
         auto map = f.memoryMap!char(Access.readWrite);
@@ -244,7 +244,7 @@ unittest
 
     // Read the file back in
     {
-        auto f = new File(tf.name, FileFlags.readExisting);
+        auto f = File(tf.name, FileFlags.readExisting);
         auto map = f.memoryMap!char(Access.read);
         assert(map.length == newData.length);
         assert(map[0 .. newData.length] == newData[]);
@@ -263,7 +263,7 @@ unittest
 
     auto tf = testFile();
 
-    auto f = new File(tf.name, FileFlags.readWriteEmpty);
+    auto f = File(tf.name, FileFlags.readWriteEmpty);
     assert(f.length == 0);
     assert(collectException!SysException(f.memoryMap!char(Access.readWrite)));
 }
