@@ -9,6 +9,7 @@
 module io.file.stdio;
 
 import io.file.stream;
+import io.buffer.fixed;
 
 /**
  * Standard I/O streams.

@@ -18,21 +18,22 @@ import std.algorithm : forward;
  * Serializes the given arguments to a text representation followed by a new
  * line.
  */
-size_t print(T...)(Sink sink, auto ref T args)
+size_t print(Stream, T...)(Stream stream, auto ref T args)
+    if (isSink!Stream)
 {
     import std.conv : to;
 
     size_t length;
 
     foreach (arg; args)
-        length += sink.write(arg.to!string);
+        length += stream.write(arg.to!string);
 
     return length;
 }
 
 /// Ditto
 size_t print(T...)(auto ref T args)
-    if (T.length > 0 && !is(T[0] : Sink))
+    if (T.length > 0 && !isSink!(T[0]))
 {
     return stdout.print(forward!args);
 }
@@ -104,10 +105,11 @@ unittest
  * Serializes the given arguments according to the given format specifier
  * string.
  */
-void printf(T...)(Sink sink, string format, auto ref T args)
+void printf(Stream, T...)(Stream stream, string format, auto ref T args)
+    if (isSink!Stream)
 {
     import std.format : formattedWrite;
-    formattedWrite(sink, forward!(format, args));
+    formattedWrite(stream, forward!(format, args));
 }
 
 /// Ditto
@@ -146,10 +148,11 @@ unittest
 /**
  * Like $(D writef), but also writes a new line.
  */
-void printfln(T...)(Sink sink, string format, auto ref T args)
+void printfln(Stream, T...)(Stream stream, string format, auto ref T args)
+    if (isSink!Stream)
 {
-    sink.printf(forward!(format, args));
-    sink.print('\n');
+    stream.printf(forward!(format, args));
+    stream.print('\n');
 }
 
 /// Ditto
@@ -162,8 +165,9 @@ void printfln(T...)(string format, auto ref T args)
  * Convenience function for returning a delimiter range that iterates over
  * lines.
  */
-@property auto byLine(T = char)(Source source)
+@property auto byLine(T = char, Stream)(Stream stream)
+    if (isSource!Stream)
 {
     import io.range : splitter;
-    return splitter!T(source, '\n');
+    return splitter!T(stream, '\n');
 }

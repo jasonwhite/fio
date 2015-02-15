@@ -172,7 +172,7 @@ class FixedBuffer(Stream) : Stream
          * Writes the given data to the buffered stream. When the internal
          * buffer is completely filled, it is flushed to the underlying stream.
          */
-        override size_t write(const(void)[] buf)
+        override size_t put(const(void)[] buf)
         {
             beginWrite();
 
@@ -192,6 +192,8 @@ class FixedBuffer(Stream) : Stream
             // Write the rest.
             return satisfied + writePartial(buf);
         }
+
+        alias write = put;
 
         /**
          * Writes any pending data to the underlying stream.

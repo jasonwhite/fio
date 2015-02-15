@@ -336,7 +336,7 @@ class File : Seekable!SourceSink
      *
      * Returns: The number of bytes that were written.
      */
-    size_t write(const(void)[] data)
+    size_t put(const(void)[] data)
     {
         version (Posix)
         {
@@ -353,6 +353,8 @@ class File : Seekable!SourceSink
             return written;
         }
     }
+
+    alias write = put;
 
     unittest
     {
