@@ -5,3 +5,4 @@
 .dub/*
 docs.json
 libio.a
+__test__library__
