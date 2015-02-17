@@ -1,8 +1,9 @@
 *.swp
 *.lst
 *.o
-/io
-.dub/*
-docs.json
-libio.a
-__test__library__
+/.dub/*
+/docs/*
+/docs.json
+/dub.selections.json
+/libio.a
+/__test__library__
