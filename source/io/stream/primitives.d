@@ -56,6 +56,7 @@ alias put = writeExactly;
  * Set the position (in bytes) of a stream.
  *
  * Params:
+ *   stream = The stream get set the position of. The stream must be seekable.
  *   offset = The offset into the stream.
  */
 @property void position(Stream, Offset)(Stream stream, Offset offset)

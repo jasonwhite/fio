@@ -25,7 +25,7 @@ Pipe!F pipe(F = File)()
     {
         import core.sys.posix.unistd : pipe;
 
-        int fd[2] = void;
+        int[2] fd = void;
         sysEnforce(pipe(fd) != -1);
         return Pipe!F(F(fd[0]), F(fd[1]));
     }

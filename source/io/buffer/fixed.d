@@ -255,7 +255,7 @@ unittest
     import io.file.stream, io.file.temp;
 
     immutable data = "The quick brown fox jumps over the lazy dog.";
-    char buffer[data.length];
+    char[data.length] buffer;
 
     foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
     {

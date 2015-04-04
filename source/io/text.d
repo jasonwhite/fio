@@ -12,7 +12,7 @@ module io.text;
 import io.stream;
 
 import io.file.stdio : stdout;
-import std.algorithm : forward;
+import std.functional : forward;
 
 /**
  * Serializes the given arguments to a text representation followed by a new

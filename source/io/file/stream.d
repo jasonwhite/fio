@@ -765,8 +765,24 @@ private struct FileImpl
     }
 }
 
+unittest
+{
+    import io.stream.types;
+    static assert(isSink!FileImpl);
+    static assert(isSource!FileImpl);
+    static assert(isSeekable!FileImpl);
+}
+
 import std.typecons;
 alias File = RefCounted!(FileImpl, RefCountedAutoInitialize.no);
+
+unittest
+{
+    import io.stream.types;
+    static assert(isSink!File);
+    static assert(isSource!File);
+    static assert(isSeekable!File);
+}
 
 version (unittest)
 {
