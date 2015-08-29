@@ -356,7 +356,7 @@ private struct FileImpl
      *
      * Returns: The number of bytes that were written.
      */
-    size_t put(const(void)[] data)
+    size_t write(const(void)[] data)
     in { assert(isOpen); }
     body
     {
@@ -376,7 +376,7 @@ private struct FileImpl
         }
     }
 
-    alias write = put;
+    alias put = write;
 
     unittest
     {
