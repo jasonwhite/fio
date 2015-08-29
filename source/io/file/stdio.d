@@ -35,12 +35,15 @@ shared static this()
     version (Posix)
     {
         import core.sys.posix.unistd : dup;
-        stdin  = File(dup(0));
-        stdout = File(dup(1));
-        stderr = File(dup(2));
+        stdin  = File.dup(0);
+        stdout = File.dup(1);
+        stderr = File.dup(2);
     }
     else version (Windows)
     {
-        static assert(false, "Implement me.");
+        import core.sys.windows.windows;
+        stdin  = File.dup(GetStdHandle(STD_INPUT_HANDLE));
+        stdout = File.dup(GetStdHandle(STD_OUTPUT_HANDLE));
+        stderr = File.dup(GetStdHandle(STD_ERROR_HANDLE));
     }
 }

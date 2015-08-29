@@ -196,7 +196,8 @@ private struct FileImpl
      * Takes control of a file handle.
      *
      * It is assumed that we have exclusive control over the file handle and will
-     * be closed upon destruction as usual.
+     * be closed upon destruction as usual. If non-exclusive control is desired,
+     * use $(D dup) instead.
      *
      * This function is useful in a couple of situations:
      * $(UL
@@ -219,29 +220,39 @@ private struct FileImpl
         _h = h;
     }
 
-    this(this)
+    /**
+     * Duplicates the given platform-specific file handle. This is useful for
+     * taking non-exclusive control over a file handle.
+     */
+    static File dup(Handle h)
     {
         version (Posix)
         {
-            immutable h = .dup(_h);
-            sysEnforce(h != InvalidHandle, "Failed to duplicate handle");
-            _h = h;
+            immutable new_h = .dup(h);
+            sysEnforce(new_h != InvalidHandle, "Failed to duplicate handle");
+            return File(new_h);
         }
         else version (Windows)
         {
+            Handle new_h = void;
             immutable proc = GetCurrentProcess();
             auto ret = DuplicateHandle(
-                proc, // Process with the file handle
-                _h,   // Handle to duplicate
-                proc, // Process for the duplicated handle
-                &_h,  // The duplicated handle
-                0,    // Access flags, ignored
-                true, // Allow this handle to be inherited
+                proc,   // Process with the file handle
+                h,      // Handle to duplicate
+                proc,   // Process for the duplicated handle
+                &new_h, // The duplicated handle
+                0,      // Access flags, ignored
+                true,   // Allow this handle to be inherited
                 DUPLICATE_SAME_ACCESS
             );
             sysEnforce(ret, "Failed to duplicate handle");
-            _h = ret;
+            return File(new_h);
         }
+    }
+
+    this(this)
+    {
+        this = dup(_h);
     }
 
     unittest
@@ -534,8 +545,7 @@ private struct FileImpl
         }
         else version (Windows)
         {
-            // TODO: Use GetConsoleMode
-            static assert(false, "Implement me!");
+            return GetFileType(_h) == FILE_TYPE_CHAR;
         }
     }
 
