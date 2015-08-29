@@ -70,10 +70,18 @@ else version (Windows)
             DWORD dwMoveMethod
         );
 
-        BOOL GetFileSizeEx(
-            HANDLE hFile,
-            long* lpFileSize
-        );
+        void FlushFileBuffers(HANDLE hFile);
+        BOOL GetFileSizeEx(HANDLE hFile, long* lpFileSize);
+        DWORD GetFileType(HANDLE hFile);
+
+        enum
+        {
+            FILE_TYPE_UNKNOWN = 0x0000,
+            FILE_TYPE_DISK    = 0x0001,
+            FILE_TYPE_CHAR    = 0x0002,
+            FILE_TYPE_PIPE    = 0x0003,
+            FILE_TYPE_REMOTE  = 0x8000,
+        }
     }
 
     // FIXME: This should be moved into a separate module.
