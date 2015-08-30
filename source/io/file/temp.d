@@ -104,7 +104,7 @@ F tempFile(F = File)(string dir = tempDir)
 }
 
 version (Windows)
-File tempFile(F = File, T)(T dir = tempDir!T)
+File tempFile(F = File, T = string)(T dir = tempDir!T)
     if ((is(T : string) || is(T : wstring)))
 {
     import core.sys.windows.windows;
