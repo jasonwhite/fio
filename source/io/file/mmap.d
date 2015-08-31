@@ -39,6 +39,31 @@ version (Posix)
 else version (Windows)
 {
     import std.c.windows.windows;
+
+    // Converts file access flags to Windows protection flags.
+    private @property DWORD protectionFlags(Access access) pure nothrow
+    {
+        switch (access)
+        {
+            case Access.read: return PAGE_READONLY;
+            case Access.write: return PAGE_READWRITE;
+            case Access.readWrite: return PAGE_READWRITE;
+            case Access.read | Access.execute: return PAGE_EXECUTE_READ;
+            case Access.write | Access.execute: return PAGE_EXECUTE_READWRITE;
+            case Access.readWrite | Access.execute: return PAGE_EXECUTE_READWRITE;
+            default: return PAGE_READONLY;
+        }
+    }
+
+    // Converts file access flags to Windows MapViewOfFileEx flags
+    private @property DWORD mapViewFlags(Access access) pure nothrow
+    {
+        DWORD flags = 0;
+        if (access & Access.read)    flags |= FILE_MAP_READ;
+        if (access & Access.write)   flags |= FILE_MAP_WRITE;
+        if (access & Access.execute) flags |= FILE_MAP_EXECUTE;
+        return flags;
+    }
 }
 else
 {
@@ -69,8 +94,8 @@ final class MemoryMap(T)
      *          must have random access capabilities.
      *   access = Access flags of the memory region. Read-only access by
      *            default.
-     *   length = Length of the file. If 0, the length is taken to be the size
-     *            of the file. 0 by default.
+     *   length = Length of the memory map. If 0, the length is taken to be the
+     *            size of the file. 0 by default.
      *   start = Offset within the file to start the mapping. This must be
      *           a multiple of the page size (generally 4096). 0 by default.
      *   share = If true, changes are visible to other processes. If false,
@@ -81,7 +106,7 @@ final class MemoryMap(T)
      *             null, the system chooses an appropriate address. Null by
      *             default.
      *
-     * Throws: SysException
+     * Throws: SysException if the memory map could not be created.
      */
     this(File file, Access access = Access.read, size_t length = 0,
         File.Offset start = 0, bool share = true, void* address = null)
@@ -91,17 +116,17 @@ final class MemoryMap(T)
             import std.conv : to;
 
             if (length == 0)
-                length = file.length.to!size_t / T.sizeof;
+                length = (file.length - start).to!size_t / T.sizeof;
 
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 
             auto p = cast(T*)mmap(
-                address,                // Preferred address
+                address,                // Preferred base address
                 length * T.sizeof,      // Length of the memory map
                 access.protectionFlags, // Protection flags
                 flags,                  // Mapping flags
                 file.handle,            // File descriptor
-                cast(off_t)start        // Offset within the file (must be page-aligned)
+                cast(off_t)start        // Offset within the file
                 );
 
             sysEnforce(p != MAP_FAILED, "Failed to map file to memory");
@@ -110,9 +135,39 @@ final class MemoryMap(T)
         }
         else version (Windows)
         {
-            // TODO
-            //auto fileMapping = CreateFileMappingA(file.handle, null, );
-            static assert(false, "Implement me!");
+            immutable ULARGE_INTEGER maxSize =
+                {QuadPart: cast(ulong)(length * T.sizeof)};
+
+            // Create the file mapping object
+            fileMap = CreateFileMappingW(
+                file.handle,            // File handle
+                null,                   // Security attributes
+                access.protectionFlags, // Page protection flags
+                maxSize.HighPart,       // Maximum size (high-order bytes)
+                maxSize.LowPart,        // Maximum size (low-order bytes)
+                null                    // Optional name to give the object
+                );
+
+            sysEnforce(fileMapping, "Failed to create file mapping object");
+
+            scope(failure) CloseHandle(fileMapping);
+
+            immutable ULARGE_INTEGER offset =
+                {QuadPart: cast(ulong)(start * T.sizeof)};
+
+            // Create a view into the file mapping
+            auto p = MapViewOfFileEx(
+                fileMapping,         // File mapping object
+                access.mapViewFlags, // Desired access
+                offset.HighPart,     // File offset (high-order bytes)
+                offset.LowPart,      // File offset (low-order bytes)
+                length * T.sizeof,   // Number of bytes to map
+                address,             // Preferred base address
+                );
+
+            sysEnforce(p, "Failed to map file to memory");
+
+            data = p[0 .. length];
         }
     }
 
@@ -149,6 +204,10 @@ final class MemoryMap(T)
         }
         else version (Windows)
         {
+            sysEnforce(
+                CloseHandle(fileMap),
+                "Failed to close file map object handle"
+                );
             sysEnforce(
                 UnmapViewOfFile(data.ptr) != 0,
                 "Failed to unmap memory"
