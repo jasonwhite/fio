@@ -207,12 +207,12 @@ final class MemoryMap(T)
         else version (Windows)
         {
             sysEnforce(
-                CloseHandle(fileMap),
-                "Failed to close file map object handle"
-                );
-            sysEnforce(
                 UnmapViewOfFile(data.ptr) != 0,
                 "Failed to unmap memory"
+                );
+            sysEnforce(
+                CloseHandle(fileMap),
+                "Failed to close file map object handle"
                 );
         }
     }
