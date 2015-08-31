@@ -82,6 +82,12 @@ else version (Windows)
             FILE_TYPE_PIPE    = 0x0003,
             FILE_TYPE_REMOTE  = 0x8000,
         }
+
+        enum
+        {
+            DUPLICATE_CLOSE_SOURCE = 0x00000001,
+            DUPLICATE_SAME_ACCESS  = 0x00000002,
+        }
     }
 
     // FIXME: This should be moved into a separate module.
@@ -243,7 +249,7 @@ private struct FileImpl
         else version (Windows)
         {
             Handle new_h = void;
-            immutable proc = GetCurrentProcess();
+            auto proc = GetCurrentProcess();
             auto ret = DuplicateHandle(
                 proc,   // Process with the file handle
                 h,      // Handle to duplicate
@@ -296,7 +302,7 @@ private struct FileImpl
      * Returns the internal file handle. On POSIX, this is a file descriptor. On
      * Windows, this is an object handle.
      */
-    @property Handle handle() const pure nothrow
+    @property Handle handle() pure nothrow
     {
         return _h;
     }

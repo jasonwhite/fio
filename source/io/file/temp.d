@@ -61,7 +61,7 @@ private wstring tempDirImpl()
 {
     static wchar[MAX_PATH] buf;
     immutable len = GetTempPathW(buf.length, buf.ptr);
-    return buf[0 .. len];
+    return cast(wstring)(buf[0 .. len]);
 }
 
 /**

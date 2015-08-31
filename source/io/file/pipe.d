@@ -33,7 +33,7 @@ Pipe!F pipe(F = File)()
     {
         import core.sys.windows.windows : CreatePipe;
 
-        Handle readEnd, writeEnd;
+        F.Handle readEnd = void, writeEnd = void;
         sysEnforce(CreatePipe(&readEnd, &writeEnd, null, 0));
         return Pipe!F(F(readEnd), F(writeEnd));
     }
