@@ -125,6 +125,7 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
     if ((is(T : string) || is(T : wstring)))
 {
     import std.conv : to;
+    import std.string : fromStringz;
 
     auto d = dir.to!wstring ~ '\0';
 
@@ -160,7 +161,7 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
 
     sysEnforce(
         h != File.InvalidHandle,
-        "Failed to create temporary file '"~ path.to!string ~"'"
+        "Failed to create temporary file '"~ path.fromStringz.to!string ~"'"
     );
 
     static if (is(F == class))
