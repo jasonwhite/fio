@@ -70,7 +70,7 @@ else version (Windows)
             DWORD dwMoveMethod
         );
 
-        void FlushFileBuffers(HANDLE hFile);
+        BOOL FlushFileBuffers(HANDLE hFile);
         BOOL GetFileSizeEx(HANDLE hFile, long* lpFileSize);
         DWORD GetFileType(HANDLE hFile);
 
