@@ -8,6 +8,25 @@ module io.file.temp;
 import io.stream;
 import io.file.stream;
 
+private version (Windows)
+{
+    import core.sys.windows.windows;
+
+    extern (Windows) nothrow export
+    {
+        UINT GetTempFileNameW(
+            LPCWSTR lpPathName,
+            LPCWSTR lpPrefixString,
+            UINT uUnique,
+            LPWSTR lpTempFileName
+        );
+
+        DWORD GetTempPathW(
+            DWORD nBufferLength,
+            LPWSTR lpBuffer
+        );
+    }
+}
 
 version (Posix)
 private const(char*) tempDirImpl()
@@ -40,8 +59,6 @@ private const(char*) tempDirImpl()
 version (Windows)
 private wstring tempDirImpl()
 {
-    import core.sys.windows.windows : MAX_PATH, GetTempPathW;
-
     static wchar[MAX_PATH] buf;
     immutable len = GetTempPathW(buf.length, buf.ptr);
     return buf[0 .. len];
@@ -107,7 +124,6 @@ version (Windows)
 File tempFile(F = File, T = string)(T dir = tempDir!T)
     if ((is(T : string) || is(T : wstring)))
 {
-    import core.sys.windows.windows;
     import std.conv : to;
 
     auto d = dir.to!wstring ~ '\0';
