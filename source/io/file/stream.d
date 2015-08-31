@@ -517,8 +517,9 @@ private struct FileImpl
         }
         else version (Windows)
         {
-            // This is not thread-safe.
-            auto pos = seekTo(len);   // Seek to the correct position
+            // FIXME: This is not thread safe because it requires 4 system calls.
+            auto pos = seekTo(0, From.here);
+            seekTo(len); // Seek to the correct position
             scope (exit) seekTo(pos); // Seek back
 
             sysEnforce(
