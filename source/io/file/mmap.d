@@ -158,7 +158,7 @@ final class MemoryMap(T)
                 {QuadPart: cast(ulong)(start * T.sizeof)};
 
             // Create a view into the file mapping
-            auto p = MapViewOfFileEx(
+            auto p = cast(T*)MapViewOfFileEx(
                 fileMap,             // File mapping object
                 access.mapViewFlags, // Desired access
                 offset.HighPart,     // File offset (high-order bytes)
