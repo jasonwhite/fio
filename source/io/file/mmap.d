@@ -88,8 +88,10 @@ final class MemoryMap(T)
     {
         version (Posix)
         {
+            import std.conv : to;
+
             if (length == 0)
-                length = file.length/T.sizeof;
+                length = file.length.to!size_t / T.sizeof;
 
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 

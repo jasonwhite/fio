@@ -18,6 +18,8 @@ private struct FixedBufferImpl(Stream)
 
     alias stream this;
 
+    alias Offset = Stream.Offset;
+
     // Buffer to store the data to be read or written.
     private void[] _buffer;
 
@@ -216,7 +218,7 @@ private struct FixedBufferImpl(Stream)
         /**
          * Seeks to the given position relative to the given starting point.
          */
-        ptrdiff_t seekTo(ptrdiff_t offset, From from = From.start)
+        Offset seekTo(Offset offset, From from = From.start)
         {
             static if (isSource!Stream)
             {
@@ -225,6 +227,7 @@ private struct FixedBufferImpl(Stream)
                     if (from == From.here)
                     {
                         // Can we seek within the buffer?
+                        // FIXME: Handle potential integer overflow.
                         if (_position + offset < _valid)
                         {
                             _position += offset;
