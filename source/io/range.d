@@ -19,7 +19,7 @@ struct ByChunk(Stream)
         Stream _source;
 
         // Buffer to read in the data into.
-        void[] _buffer;
+        ubyte[] _buffer;
 
         // Length of valid data in the buffer
         size_t _valid;
@@ -27,10 +27,10 @@ struct ByChunk(Stream)
 
     this(Stream source, size_t size = 4096)
     {
-        this(source, new void[](size));
+        this(source, new ubyte[](size));
     }
 
-    this(Stream source, void[] buffer)
+    this(Stream source, ubyte[] buffer)
     {
         _source = source;
         _buffer = buffer;
@@ -48,7 +48,7 @@ struct ByChunk(Stream)
     /**
      * Returns the current chunk of the stream.
      */
-    const(void)[] front() const pure
+    const(ubyte)[] front() const pure
     {
         return _buffer[0 .. _valid];
     }
@@ -72,7 +72,7 @@ auto byChunk(Stream)(Stream stream, size_t size = 4096)
 }
 
 /// Ditto
-auto byChunk(Stream)(Stream stream, void[] buffer)
+auto byChunk(Stream)(Stream stream, ubyte[] buffer)
     if (isSource!Stream)
 {
     return ByChunk!Stream(stream, buffer);
