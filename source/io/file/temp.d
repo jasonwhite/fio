@@ -135,7 +135,7 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
         );
 
     // FIXME: Not very elegant. There is no wchar* overload for fromStringz.
-    wstring path = buf[0 .. wcslen(buf.ptr)];
+    wchar[] path = buf[0 .. wcslen(buf.ptr)];
 
     auto h = CreateFileW(
         // Temporary file name
