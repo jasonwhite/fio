@@ -40,7 +40,7 @@ size_t print(T...)(auto ref T args)
 
 unittest
 {
-    import io.file.pipe;
+    import io.file.stream;
     import std.typecons : tuple;
     import std.typetuple : TypeTuple;
 
@@ -54,14 +54,23 @@ unittest
         tuple("01234567890", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0),
         );
 
+    auto tf = testFile();
+
     foreach (t; tests)
     {
-        auto f = pipe();
         immutable output = t[0];
-        char[output.length] buf;
-        assert(f.writeEnd.print(t[1 .. $]) == output.length);
-        assert(f.readEnd.read(buf) == buf.length);
-        assert(buf == output);
+
+        {
+            auto f = File(tf.name, FileFlags.writeEmpty);
+            assert(f.print(t[1 .. $]) == output.length);
+        }
+
+        {
+            char[output.length] buf;
+            auto f = File(tf.name, FileFlags.readExisting);
+            assert(f.read(buf) == buf.length);
+            assert(buf == output);
+        }
     }
 }
 
@@ -76,7 +85,7 @@ size_t println(T...)(auto ref T args)
 
 unittest
 {
-    import io.file.pipe;
+    import io.file.stream;
     import std.typecons : tuple;
     import std.typetuple : TypeTuple;
 
@@ -90,14 +99,23 @@ unittest
         tuple("01234567890\n", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0),
         );
 
+    auto tf = testFile();
+
     foreach (t; tests)
     {
-        auto f = pipe();
         immutable output = t[0];
-        char[output.length] buf;
-        assert(f.writeEnd.println(t[1 .. $]) == output.length);
-        assert(f.readEnd.read(buf) == buf.length);
-        assert(buf == output);
+
+        {
+            auto f = File(tf.name, FileFlags.writeEmpty);
+            assert(f.println(t[1 .. $]) == output.length);
+        }
+
+        {
+            char[output.length] buf;
+            auto f = File(tf.name, FileFlags.readExisting);
+            assert(f.read(buf) == buf.length);
+            assert(buf == output);
+        }
     }
 }
 
@@ -120,7 +138,7 @@ void printf(T...)(string format, auto ref T args)
 
 unittest
 {
-    import io.file.pipe;
+    import io.file.stream;
     import std.typecons : tuple;
     import std.typetuple : TypeTuple;
 
@@ -134,14 +152,23 @@ unittest
             "Inigo", "Montoya")
         );
 
+    auto tf = testFile();
+
     foreach (t; tests)
     {
-        auto f = pipe();
         immutable output = t[0];
-        char[output.length] buf;
-        f.writeEnd.printf(t[1 .. $]);
-        assert(f.readEnd.read(buf) == buf.length);
-        assert(buf == output);
+
+        {
+            auto f = File(tf.name, FileFlags.writeEmpty);
+            f.printf(t[1 .. $]);
+        }
+
+        {
+            char[output.length] buf;
+            auto f = File(tf.name, FileFlags.readExisting);
+            assert(f.read(buf) == buf.length);
+            assert(buf == output);
+        }
     }
 }
 
