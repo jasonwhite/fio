@@ -96,10 +96,10 @@ final class MemoryMap(T)
      *          must have random access capabilities.
      *   access = Access flags of the memory region. Read-only access by
      *            default.
-     *   length = Length of the memory map. If 0, the length is taken to be the
-     *            size of the file. 0 by default.
-     *   start = Offset within the file to start the mapping. This must be
-     *           a multiple of the page size (generally 4096). 0 by default.
+     *   length = Length of the memory map in number of $(D T). If 0, the length
+     *            is taken to be the size of the file. 0 by default.
+     *   start = Offset within the file to start the mapping in bytes. 0 by
+     *           default.
      *   share = If true, changes are visible to other processes. If false,
      *           changes are not visible to other processes and are never
      *           written back to the file. True by default.
@@ -154,8 +154,7 @@ final class MemoryMap(T)
 
             scope(failure) CloseHandle(fileMap);
 
-            immutable ULARGE_INTEGER offset =
-                {QuadPart: cast(ulong)(start * T.sizeof)};
+            immutable ULARGE_INTEGER offset = {QuadPart: cast(ulong)start};
 
             // Create a view into the file mapping
             auto p = cast(T*)MapViewOfFileEx(
