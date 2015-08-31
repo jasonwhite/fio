@@ -150,8 +150,8 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
         // Security attributes
         null,
 
-        // Creation disposition
-        CREATE_NEW,
+        // Creation disposition. Note that GetTempFileName creates this file.
+        CREATE_ALWAYS,
 
         // Flags and attributes
         FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY |
