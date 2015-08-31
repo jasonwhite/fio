@@ -121,7 +121,7 @@ F tempFile(F = File)(string dir = tempDir)
 }
 
 version (Windows)
-File tempFile(F = File, T = string)(T dir = tempDir!T)
+F tempFile(F = File, T = string)(T dir = tempDir!T)
     if ((is(T : string) || is(T : wstring)))
 {
     import std.conv : to;
