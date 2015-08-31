@@ -77,7 +77,7 @@ else
  * a slice of memory. For many use cases, it is a very efficient means of
  * accessing a file.
  */
-final class MemoryMap(T)
+private struct MemoryMapImpl(T)
 {
     // Memory mapped data.
     T[] data;
@@ -274,6 +274,9 @@ final class MemoryMap(T)
     @disable void opOpAssign(string op = "~")(const(T)[] rhs);
 }
 
+import std.typecons;
+alias MemoryMap(T) = RefCounted!(MemoryMapImpl!T, RefCountedAutoInitialize.no);
+
 /**
  * Convenience function for creating a memory map.
  */
@@ -281,7 +284,7 @@ auto memoryMap(T)(File file, Access access = Access.read,
     size_t length = 0, File.Offset start = 0, bool share = true,
     void* address = null)
 {
-    return new MemoryMap!T(file, access, length, start, share, address);
+    return MemoryMap!T(file, access, length, start, share, address);
 }
 
 ///
