@@ -40,6 +40,8 @@ else version (Windows)
 {
     import std.c.windows.windows;
 
+    enum FILE_MAP_EXECUTE = 0x0020;
+
     // Converts file access flags to Windows protection flags.
     private @property DWORD protectionFlags(Access access) pure nothrow
     {
@@ -148,16 +150,16 @@ final class MemoryMap(T)
                 null                    // Optional name to give the object
                 );
 
-            sysEnforce(fileMapping, "Failed to create file mapping object");
+            sysEnforce(fileMap, "Failed to create file mapping object");
 
-            scope(failure) CloseHandle(fileMapping);
+            scope(failure) CloseHandle(fileMap);
 
             immutable ULARGE_INTEGER offset =
                 {QuadPart: cast(ulong)(start * T.sizeof)};
 
             // Create a view into the file mapping
             auto p = MapViewOfFileEx(
-                fileMapping,         // File mapping object
+                fileMap,             // File mapping object
                 access.mapViewFlags, // Desired access
                 offset.HighPart,     // File offset (high-order bytes)
                 offset.LowPart,      // File offset (low-order bytes)
