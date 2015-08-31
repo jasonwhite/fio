@@ -160,13 +160,13 @@ File tempFile(F = File, T = string)(T dir = tempDir!T)
 
     sysEnforce(
         h != File.InvalidHandle,
-        "Failed to create temporary file '"~ path ~"'"
+        "Failed to create temporary file '"~ path.to!string ~"'"
     );
 
     static if (is(F == class))
-        return new F(fd);
+        return new F(h);
     else
-        return F(fd);
+        return F(h);
 }
 
 ///
