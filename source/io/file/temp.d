@@ -125,15 +125,17 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
     if ((is(T : string) || is(T : wstring)))
 {
     import std.conv : to;
-    import std.string : fromStringz;
+    import std.utf : toUTF16z;
+    import core.stdc.wchar_ : wcslen;
 
-    auto d = dir.to!wstring ~ '\0';
-
-    wchar[MAX_PATH] path;
+    wchar[MAX_PATH] buf;
     sysEnforce(
-        GetTempFileNameW(d.ptr, "tmp", 0, path.ptr),
+        GetTempFileNameW(toUTF16z(dir), "tmp", 0, buf.ptr),
         "Failed to generate temporary file path"
         );
+
+    // FIXME: Not very elegant. There is no wchar* overload for fromStringz.
+    wstring path = buf[0 .. wcslen(buf)];
 
     auto h = CreateFileW(
         // Temporary file name
@@ -161,7 +163,7 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
 
     sysEnforce(
         h != File.InvalidHandle,
-        "Failed to create temporary file '"~ path.fromStringz.to!string ~"'"
+        "Failed to create temporary file '"~ path.to!string ~"'"
     );
 
     static if (is(F == class))
