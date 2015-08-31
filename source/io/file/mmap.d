@@ -113,13 +113,13 @@ final class MemoryMap(T)
     this(File file, Access access = Access.read, size_t length = 0,
         File.Offset start = 0, bool share = true, void* address = null)
     {
+        import std.conv : to;
+
+        if (length == 0)
+            length = (file.length - start).to!size_t / T.sizeof;
+
         version (Posix)
         {
-            import std.conv : to;
-
-            if (length == 0)
-                length = (file.length - start).to!size_t / T.sizeof;
-
             int flags = share ? MAP_SHARED : MAP_PRIVATE;
 
             auto p = cast(T*)mmap(
