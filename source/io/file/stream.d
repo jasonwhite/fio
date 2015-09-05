@@ -238,13 +238,13 @@ private struct FileImpl
      * Duplicates the given platform-specific file handle. This is useful for
      * taking non-exclusive control over a file handle.
      */
-    static File dup(Handle h)
+    static F dup(F = File)(Handle h)
     {
         version (Posix)
         {
             immutable new_h = .dup(h);
             sysEnforce(new_h != InvalidHandle, "Failed to duplicate handle");
-            return File(new_h);
+            return F(new_h);
         }
         else version (Windows)
         {
@@ -260,7 +260,7 @@ private struct FileImpl
                 DUPLICATE_SAME_ACCESS
             );
             sysEnforce(ret, "Failed to duplicate handle");
-            return File(new_h);
+            return F(new_h);
         }
     }
 
