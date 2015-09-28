@@ -281,8 +281,10 @@ private struct FileImpl
         assert(a.position == 4);
     }
 
-    /// Ditto
-    ~this()
+    /**
+     * Closes the stream if it is open. Otherwise, it does nothing.
+     */
+    void close()
     {
         // The file handle should only be invalid if the constructor throws an
         // exception.
@@ -296,6 +298,14 @@ private struct FileImpl
         {
             sysEnforce(CloseHandle(_h), "Failed to close file");
         }
+
+        _h = InvalidHandle;
+    }
+
+    /// Ditto
+    ~this()
+    {
+        close();
     }
 
     /**
@@ -307,6 +317,9 @@ private struct FileImpl
         return _h;
     }
 
+    /**
+     * Returns true if the file is open.
+     */
     @property bool isOpen()
     {
         return _h != InvalidHandle;
