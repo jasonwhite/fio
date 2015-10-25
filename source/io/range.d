@@ -439,25 +439,3 @@ unittest
 
     assert(f.splitter!char(' ').filter!(w => w != "").equal(result));
 }
-
-/**
- * Returns a range that iterates over the lines in a stream. Note that this is a
- * special case of a splitter.
- */
-auto byLine(Stream)(Stream stream)
-    if (isSource!Stream)
-{
-    return Splitter!(char, char, Stream)(stream, '\n');
-}
-
-unittest
-{
-    import io.file.temp;
-    import std.algorithm : equal;
-
-    auto f = tempFile.file;
-    f.writeExactly("This\nis\na\ntest");
-    f.position = 0;
-
-    assert(f.byLine.equal(["This", "is", "a", "test"]));
-}
