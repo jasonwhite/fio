@@ -786,8 +786,8 @@ private struct FileImpl
         {
             import std.conv : to;
 
-            auto a = tempFile();
-            auto b = tempFile();
+            auto a = tempFile().file;
+            auto b = tempFile().file;
             immutable s = "This will be copied to the other file.";
             a.write(s);
             a.position = 0;

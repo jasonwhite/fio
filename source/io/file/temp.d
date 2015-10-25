@@ -83,6 +83,11 @@ T tempDir(T = string)() @trusted
     return cache;
 }
 
+struct TempFile(File, Path)
+{
+    File file;
+    Path path;
+}
 
 /**
  * Creates a temporary file. The file is automatically deleted when it is no
@@ -90,7 +95,7 @@ T tempDir(T = string)() @trusted
  * write access.
  */
 version (Posix)
-F tempFile(F = File)(string dir = tempDir)
+TempFile!(F, string) tempFile(F = File)(string dir = tempDir, bool autoDelete = true)
 {
     /* Implementation note: Since Linux 3.11, there is the flag
      * O_TMPFILE which can be used to open a temporary file. This
@@ -102,6 +107,7 @@ F tempFile(F = File)(string dir = tempDir)
 
     import core.sys.posix.stdlib : mkstemp;
     import core.sys.posix.unistd : unlink;
+    import std.exception : assumeUnique;
 
     char[] path = dir ~ "/XXXXXX\0".dup;
 
@@ -112,20 +118,22 @@ F tempFile(F = File)(string dir = tempDir)
 
     // Unlink the file to ensure it is deleted automatically when all
     // file descriptors referring to it are closed.
-    sysEnforce(unlink(path.ptr) == 0, "Failed to unlink temporary file");
+    if (autoDelete)
+        sysEnforce(unlink(path.ptr) == 0, "Failed to unlink temporary file");
 
     static if (is(F == class))
-        return new F(fd);
+        return typeof(return)(new F(fd), assumeUnique(path));
     else
-        return F(fd);
+        return typeof(return)(F(fd), assumeUnique(path));
 }
 
 version (Windows)
-F tempFile(F = File, T = string)(T dir = tempDir!T)
+TempFile!(F, T) tempFile(F = File, T = string)(T dir = tempDir!T, bool autoDelete = true)
     if ((is(T : string) || is(T : wstring)))
 {
     import std.conv : to;
     import std.utf : toUTF16z;
+    import std.exception : assumeUnique;
     import core.stdc.wchar_ : wcslen;
 
     wchar[MAX_PATH] buf;
@@ -155,7 +163,7 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
 
         // Flags and attributes
         FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY |
-        FILE_FLAG_DELETE_ON_CLOSE,
+        (autoDelete ? FILE_FLAG_DELETE_ON_CLOSE : 0),
 
         // Template file
         null,
@@ -167,15 +175,15 @@ F tempFile(F = File, T = string)(T dir = tempDir!T)
     );
 
     static if (is(F == class))
-        return new F(h);
+        return TempFile(new F(h), assumeUnique(path));
     else
-        return F(h);
+        return TempFile(F(h), assumeUnique(path));
 }
 
 ///
 unittest
 {
-    auto f = tempFile();
+    auto f = tempFile().file;
     assert(f.position == 0);
     assert(f.write("Hello") == 5);
     assert(f.position == 5);

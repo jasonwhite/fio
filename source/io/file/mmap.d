@@ -339,7 +339,7 @@ unittest
 
     immutable int[] data = [4, 8, 15, 16, 23, 42];
 
-    auto f = tempFile();
+    auto f = tempFile().file;
     f.length = data.length * int.sizeof;
 
     auto map = f.memoryMap!int(Access.readWrite);
@@ -355,7 +355,7 @@ unittest
 
     immutable N = 1024;
 
-    auto f = tempFile();
+    auto f = tempFile().file;
     f.length = size_t.sizeof * N;
 
     auto map = f.memoryMap!size_t(Access.readWrite);

@@ -262,7 +262,7 @@ unittest
 
     foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
     {
-        auto f = tempFile!(FixedBuffer!File);
+        auto f = tempFile!(FixedBuffer!File).file;
         f.bufferSize = bufSize;
         assert(f.bufferSize == bufSize);
 
