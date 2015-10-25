@@ -120,7 +120,7 @@ TempFile!(F, string) tempFile(F = File)(AutoDelete autoDelete = AutoDelete.yes,
 
     int fd = mkstemp(path.ptr);
     sysEnforce(fd != File.InvalidHandle,
-        "Failed to create temporary file '"~ path.idup ~"'"
+        "Failed to create temporary file '"~ path[0 .. $-1].idup ~"'"
         );
 
     // Unlink the file to ensure it is deleted automatically when all
@@ -129,9 +129,9 @@ TempFile!(F, string) tempFile(F = File)(AutoDelete autoDelete = AutoDelete.yes,
         sysEnforce(unlink(path.ptr) == 0, "Failed to unlink temporary file");
 
     static if (is(F == class))
-        return typeof(return)(new F(fd), assumeUnique(path));
+        return typeof(return)(new F(fd), assumeUnique(path[0 .. $-1]));
     else
-        return typeof(return)(F(fd), assumeUnique(path));
+        return typeof(return)(F(fd), assumeUnique(path[0 .. $-1]));
 }
 
 version (Windows)
