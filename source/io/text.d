@@ -10,13 +10,14 @@
 module io.text;
 
 import io.stream;
-
 import io.file.stdio : stdout;
+import io.buffer.traits : isFlushable;
+
 import std.functional : forward;
 
 /**
- * Serializes the given arguments to a text representation followed by a new
- * line.
+ * Serializes the given arguments to a text representation without a trailing
+ * new line.
  */
 size_t print(Stream, T...)(Stream stream, auto ref T args)
     if (isSink!Stream)
@@ -27,6 +28,9 @@ size_t print(Stream, T...)(Stream stream, auto ref T args)
 
     foreach (arg; args)
         length += stream.write(arg.to!string);
+
+    static if (isFlushable!Stream)
+        stream.flush();
 
     return length;
 }

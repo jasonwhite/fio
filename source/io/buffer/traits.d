@@ -38,3 +38,21 @@ unittest
     interface F : Seekable!Sink {}
     static assert(isBufferable!F);
 }
+
+/**
+ * Checks if the stream can be flushed.
+ */
+enum isFlushable(Stream) =
+    is(typeof({
+        Stream s = void;
+        s.flush();
+    }));
+
+unittest
+{
+    struct A {}
+    static assert(!isFlushable!A);
+
+    struct B { void flush(); }
+    static assert(isFlushable!B);
+}

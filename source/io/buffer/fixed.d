@@ -11,7 +11,7 @@ module io.buffer.fixed;
 import io.stream;
 import io.buffer.traits;
 
-private struct FixedBufferImpl(Stream)
+struct FixedBufferBase(Stream)
     if (is(Stream == struct) && isBufferable!Stream)
 {
     Stream stream;
@@ -68,8 +68,7 @@ private struct FixedBufferImpl(Stream)
     /**
      * Gets the current buffer size. The default is 8192 bytes.
      */
-    @property size_t bufferSize()
-    {
+    @property size_t bufferSize() {
         return _buffer.length;
     }
 
@@ -251,7 +250,7 @@ private struct FixedBufferImpl(Stream)
 }
 
 import std.typecons : RefCounted, RefCountedAutoInitialize;
-alias FixedBuffer(Stream) = RefCounted!(FixedBufferImpl!(Stream), RefCountedAutoInitialize.no);
+alias FixedBuffer(Stream) = RefCounted!(FixedBufferBase!(Stream), RefCountedAutoInitialize.no);
 
 unittest
 {
@@ -262,7 +261,7 @@ unittest
 
     foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
     {
-        auto f = tempFile!(FixedBuffer!File).file;
+        auto f = tempFile!(FixedBuffer!FileBase).file;
         f.bufferSize = bufSize;
         assert(f.bufferSize == bufSize);
 

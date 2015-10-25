@@ -119,7 +119,7 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
 /**
  * A cross-platform wrapper around low-level file operations.
  */
-private struct FileImpl
+struct FileBase
 {
     // Platform-specific file handle
     version (Posix)
@@ -806,13 +806,15 @@ private struct FileImpl
 unittest
 {
     import io.stream.types;
-    static assert(isSink!FileImpl);
-    static assert(isSource!FileImpl);
-    static assert(isSeekable!FileImpl);
+    static assert(isSink!FileBase);
+    static assert(isSource!FileBase);
+    static assert(isSeekable!FileBase);
 }
 
 import std.typecons;
-alias File = RefCounted!(FileImpl, RefCountedAutoInitialize.no);
+import io.buffer.fixed;
+alias File = RefCounted!(FileBase, RefCountedAutoInitialize.no);
+alias BufferedFile = RefCounted!(FixedBufferBase!FileBase, RefCountedAutoInitialize.no);
 
 unittest
 {
