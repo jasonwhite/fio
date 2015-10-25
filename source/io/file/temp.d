@@ -89,13 +89,20 @@ struct TempFile(File, Path)
     Path path;
 }
 
+enum AutoDelete
+{
+    no,
+    yes
+}
+
 /**
  * Creates a temporary file. The file is automatically deleted when it is no
  * longer referenced. The temporary file is always opened with both read and
  * write access.
  */
 version (Posix)
-TempFile!(F, string) tempFile(F = File)(string dir = tempDir, bool autoDelete = true)
+TempFile!(F, string) tempFile(F = File)(AutoDelete autoDelete = AutoDelete.yes,
+        string dir = tempDir)
 {
     /* Implementation note: Since Linux 3.11, there is the flag
      * O_TMPFILE which can be used to open a temporary file. This
@@ -118,7 +125,7 @@ TempFile!(F, string) tempFile(F = File)(string dir = tempDir, bool autoDelete = 
 
     // Unlink the file to ensure it is deleted automatically when all
     // file descriptors referring to it are closed.
-    if (autoDelete)
+    if (autoDelete == AutoDelete.yes)
         sysEnforce(unlink(path.ptr) == 0, "Failed to unlink temporary file");
 
     static if (is(F == class))
@@ -128,7 +135,8 @@ TempFile!(F, string) tempFile(F = File)(string dir = tempDir, bool autoDelete = 
 }
 
 version (Windows)
-TempFile!(F, T) tempFile(F = File, T = string)(T dir = tempDir!T, bool autoDelete = true)
+TempFile!(F, T) tempFile(F = File, T = string)(
+        AutoDelete autoDelete = AutoDelete.yes, T dir = tempDir!T)
     if ((is(T : string) || is(T : wstring)))
 {
     import std.conv : to;
@@ -163,7 +171,7 @@ TempFile!(F, T) tempFile(F = File, T = string)(T dir = tempDir!T, bool autoDelet
 
         // Flags and attributes
         FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY |
-        (autoDelete ? FILE_FLAG_DELETE_ON_CLOSE : 0),
+        ((autoDelete == AutoDelete.yes) ? FILE_FLAG_DELETE_ON_CLOSE : 0),
 
         // Template file
         null,
