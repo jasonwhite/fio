@@ -88,7 +88,7 @@ unittest
     immutable chunks = ["1234", "5678", "abcd", "efgh", "ij"];
     immutable data = chunks.join();
 
-    auto f = tempFile().file;
+    auto f = tempFile.file;
     f.writeExactly(data);
     f.position = 0;
 
@@ -190,7 +190,7 @@ unittest
         {7, 8, 9},
     ];
 
-    auto f = tempFile().file;
+    auto f = tempFile.file;
     f.put(data);
     f.position = 0;
 
@@ -370,7 +370,7 @@ unittest
     // Test an empty split
     import io.file.temp;
     import std.algorithm : equal;
-    assert(tempFile().file.splitter!char('\n').equal(string[].init));
+    assert(tempFile.file.splitter!char('\n').equal(string[].init));
 }
 
 version (unittest)
@@ -387,7 +387,7 @@ version (unittest)
         else
             auto joined = regions.join([separator]);
 
-        auto f = tempFile().file;
+        auto f = tempFile.file;
         f.writeExactly(joined);
         f.position = 0;
 
@@ -433,7 +433,7 @@ unittest
         "The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"
     ];
 
-    auto f = tempFile().file;
+    auto f = tempFile.file;
     f.writeExactly(data);
     f.position = 0;
 

@@ -183,7 +183,7 @@ TempFile!(F, T) tempFile(F = File, T = string)(T dir = tempDir!T, bool autoDelet
 ///
 unittest
 {
-    auto f = tempFile().file;
+    auto f = tempFile.file;
     assert(f.position == 0);
     assert(f.write("Hello") == 5);
     assert(f.position == 5);
