@@ -135,6 +135,9 @@ struct FileBase
 
     private Handle _h = InvalidHandle;
 
+    // Name of the file, for debugging purposes only.
+    debug string name;
+
     /**
      * Opens or creates a file by name. By default, an existing file is opened
      * in read-only mode.
@@ -154,6 +157,8 @@ struct FileBase
      */
     this(string name, FileFlags flags = FileFlags.readExisting)
     {
+        debug this.name = name;
+
         version (Posix)
         {
             import std.string : toStringz;
@@ -264,22 +269,10 @@ struct FileBase
         }
     }
 
-    this(this)
-    {
-        this = dup(_h);
-    }
-
-    unittest
-    {
-        auto tf = testFile();
-
-        auto a = File(tf.name, FileFlags.writeEmpty);
-
-        auto b = a; // Copy
-        b.write("abcd");
-
-        assert(a.position == 4);
-    }
+    /**
+     * Copying is disabled because references counting should be used instead.
+     */
+    @disable this(this);
 
     /**
      * Closes the stream if it is open. Otherwise, it does nothing.
@@ -342,13 +335,16 @@ struct FileBase
         version (Posix)
         {
             immutable n = .read(_h, buf.ptr, buf.length);
-            sysEnforce(n >= 0);
+            sysEnforce(n >= 0, "Failed to read from file");
             return n;
         }
         else version (Windows)
         {
             DWORD n = void;
-            sysEnforce(ReadFile(_h, buf.ptr, buf.length, &n, null));
+            sysEnforce(
+                ReadFile(_h, buf.ptr, buf.length, &n, null),
+                "Failed to read from file"
+                );
             return n;
         }
     }
@@ -382,14 +378,15 @@ struct FileBase
         version (Posix)
         {
             immutable n = .write(_h, data.ptr, data.length);
-            sysEnforce(n != -1);
+            sysEnforce(n != -1, "Failed to write to file");
             return n;
         }
         else version (Windows)
         {
             DWORD written = void;
             sysEnforce(
-                WriteFile(_h, data.ptr, data.length, &written, null)
+                WriteFile(_h, data.ptr, data.length, &written, null),
+                "Failed to write to file"
                 );
             return written;
         }
@@ -814,7 +811,7 @@ unittest
 import std.typecons;
 import io.buffer.fixed;
 alias File = RefCounted!(FileBase, RefCountedAutoInitialize.no);
-alias BufferedFile = RefCounted!(FixedBufferBase!FileBase, RefCountedAutoInitialize.no);
+alias BufferedFile = FixedBuffer!File;
 
 unittest
 {
@@ -822,6 +819,52 @@ unittest
     static assert(isSink!File);
     static assert(isSource!File);
     static assert(isSeekable!File);
+
+    static assert(isSink!BufferedFile);
+    static assert(isSource!BufferedFile);
+    static assert(isSeekable!BufferedFile);
+}
+
+unittest
+{
+    auto tf = testFile();
+
+    immutable message = "The quick brown fox jumps over the lazy dog.";
+
+    char[message.length] buf;
+
+    import std.stdio;
+
+    {
+        auto f = BufferedFile(tf.name, FileFlags.writeEmpty);
+        f.bufferSize = 4;
+        assert(f.write(message) == message.length);
+    }
+
+    {
+        auto f = BufferedFile(tf.name, FileFlags.readExisting);
+        assert(buf[0 .. f.read(buf)] == message);
+    }
+}
+
+unittest
+{
+    auto tf = testFile();
+
+    immutable data = "The quick brown fox jumps over the lazy dog.";
+    char[data.length] buffer;
+
+    foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
+    {
+        auto f = BufferedFile(tf.name, FileFlags.readWriteEmpty);
+        f.bufferSize = bufSize;
+        assert(f.bufferSize == bufSize);
+
+        assert(f.write(data) == data.length);
+        f.position = 0;
+        assert(f.read(buffer) == buffer.length);
+        assert(buffer == data);
+    }
 }
 
 version (unittest)

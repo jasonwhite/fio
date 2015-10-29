@@ -34,7 +34,7 @@ struct FixedBufferBase(Stream)
      */
     this(T...)(auto ref T args)
     {
-        import std.algorithm : forward;
+        import std.functional : forward;
         stream = Stream(forward!args);
         _buffer.length = 8192;
     }
@@ -68,7 +68,8 @@ struct FixedBufferBase(Stream)
     /**
      * Gets the current buffer size. The default is 8192 bytes.
      */
-    @property size_t bufferSize() {
+    @property size_t bufferSize()
+    {
         return _buffer.length;
     }
 
@@ -85,8 +86,7 @@ struct FixedBufferBase(Stream)
         {
             private void beginRead()
             {
-                if (_position > 0)
-                    flush();
+                flush();
             }
         }
         else
@@ -179,7 +179,7 @@ struct FixedBufferBase(Stream)
          * Writes the given data to the buffered stream. When the internal
          * buffer is completely filled, it is flushed to the underlying stream.
          */
-        size_t put(const(void)[] buf)
+        size_t write(const(void)[] buf)
         {
             beginWrite();
 
@@ -200,15 +200,24 @@ struct FixedBufferBase(Stream)
             return satisfied + writePartial(buf);
         }
 
-        alias write = put;
+        alias put = write;
 
         /**
          * Writes any pending data to the underlying stream.
          */
         void flush()
         {
+            static if (isSource!Stream)
+            {
+                if (_valid > 0)
+                    return;
+            }
+
             if (_position > 0)
-                _position -= stream.write(_buffer[0 .. _position]);
+            {
+                assert(stream.write(_buffer[0 .. _position]) == _position);
+                _position = 0;
+            }
         }
     }
 
@@ -251,23 +260,3 @@ struct FixedBufferBase(Stream)
 
 import std.typecons : RefCounted, RefCountedAutoInitialize;
 alias FixedBuffer(Stream) = RefCounted!(FixedBufferBase!(Stream), RefCountedAutoInitialize.no);
-
-unittest
-{
-    import io.file.stream, io.file.temp;
-
-    immutable data = "The quick brown fox jumps over the lazy dog.";
-    char[data.length] buffer;
-
-    foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
-    {
-        auto f = tempFile!(FixedBuffer!FileBase).file;
-        f.bufferSize = bufSize;
-        assert(f.bufferSize == bufSize);
-
-        assert(f.write(data) == data.length);
-        f.position = 0;
-        assert(f.read(buffer) == buffer.length);
-        assert(buffer == data);
-    }
-}
