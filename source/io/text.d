@@ -177,7 +177,7 @@ unittest
 }
 
 /**
- * Like $(D writef), but also writes a new line.
+ * Like $(D printf), but also writes a new line.
  */
 void printfln(Stream, T...)(Stream stream, string format, auto ref T args)
     if (isSink!Stream)
