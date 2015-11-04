@@ -82,3 +82,21 @@ auto skip(Stream, Offset)(Stream stream, Offset offset)
 {
     return stream.seekTo(offset, From.here);
 }
+
+/**
+ * Reads the rest of the stream.
+ */
+T[] readAll(Stream, T=ubyte, Offset)(Stream stream, Offset upTo = long.max)
+    if (isSource!Stream && isSeekable!Stream)
+{
+    import std.algorithm : min;
+    import std.array : uninitializedArray;
+
+    immutable remaining = min((stream.length - stream.position)/T.sizeof, upTo);
+
+    auto buf = uninitializedArray!(T)(remaining);
+
+    immutable bytesRead = stream.read(buf);
+
+    return buf[0 .. bytesRead/T.sizeof];
+}
