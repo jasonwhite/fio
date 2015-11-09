@@ -816,6 +816,8 @@ alias BufferedFile = FixedBuffer!File;
 unittest
 {
     import io.stream.types;
+    import io.buffer.traits;
+
     static assert(isSink!File);
     static assert(isSource!File);
     static assert(isSeekable!File);
@@ -823,6 +825,9 @@ unittest
     static assert(isSink!BufferedFile);
     static assert(isSource!BufferedFile);
     static assert(isSeekable!BufferedFile);
+
+    static assert(isBufferable!File);
+    static assert(isFlushable!BufferedFile);
 }
 
 unittest
