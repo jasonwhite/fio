@@ -833,17 +833,19 @@ unittest
 
     char[message.length] buf;
 
-    foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
+    foreach (bufSize; [0, 1, 2, 8, 16, 64, 256])
     {
         {
             auto f = BufferedFile(tf.name, FileFlags.writeEmpty);
             f.bufferSize = bufSize;
+            assert(f.bufferSize == bufSize);
             assert(f.write(message) == message.length);
         }
 
         {
             auto f = BufferedFile(tf.name, FileFlags.readExisting);
             f.bufferSize = bufSize;
+            assert(f.bufferSize == bufSize);
             assert(buf[0 .. f.read(buf)] == message);
         }
     }
