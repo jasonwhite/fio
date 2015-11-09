@@ -68,7 +68,7 @@ struct FixedBufferBase(Stream)
     /**
      * Gets the current buffer size. The default is 8192 bytes.
      */
-    @property size_t bufferSize()
+    @property size_t bufferSize() const pure nothrow
     {
         return _buffer.length;
     }

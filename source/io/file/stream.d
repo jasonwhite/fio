@@ -833,17 +833,19 @@ unittest
 
     char[message.length] buf;
 
-    import std.stdio;
-
+    foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
     {
-        auto f = BufferedFile(tf.name, FileFlags.writeEmpty);
-        f.bufferSize = 4;
-        assert(f.write(message) == message.length);
-    }
+        {
+            auto f = BufferedFile(tf.name, FileFlags.writeEmpty);
+            f.bufferSize = bufSize;
+            assert(f.write(message) == message.length);
+        }
 
-    {
-        auto f = BufferedFile(tf.name, FileFlags.readExisting);
-        assert(buf[0 .. f.read(buf)] == message);
+        {
+            auto f = BufferedFile(tf.name, FileFlags.readExisting);
+            f.bufferSize = bufSize;
+            assert(buf[0 .. f.read(buf)] == message);
+        }
     }
 }
 
