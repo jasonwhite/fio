@@ -745,25 +745,6 @@ struct FileBase
     }
 
     /**
-     * Like $(D sync()), but does not flush meta data.
-     *
-     * NOTE: On Windows, this is exactly the same as $(D sync()).
-     */
-    void syncData()
-    in { assert(isOpen); }
-    body
-    {
-        version (Posix)
-        {
-            sysEnforce(fdatasync(_h) == 0);
-        }
-        else version (Windows)
-        {
-            sysEnforce(FlushFileBuffers(_h) != 0);
-        }
-    }
-
-    /**
      * Copies the rest of this file to the other. The positions of both files
      * are appropriately incremented, as if one called read()/write() to copy
      * the file. The number of copied bytes is returned.
