@@ -20,13 +20,13 @@ import io.buffer.fixed;
 __gshared
 {
     /// Standard input stream.
-    BufferedFile stdin;
+    File stdin;
 
     /// Standard output stream.
-    BufferedFile stdout;
+    File stdout;
 
     /// Standard error stream.
-    BufferedFile stderr;
+    File stderr;
 }
 
 shared static this()
@@ -35,16 +35,16 @@ shared static this()
     version (Posix)
     {
         import core.sys.posix.unistd : dup;
-        stdin  = BufferedFile.dup!BufferedFile(0);
-        stdout = BufferedFile.dup!BufferedFile(1);
-        stderr = BufferedFile.dup!BufferedFile(2);
+        stdin  = File.dup(0);
+        stdout = File.dup(1);
+        stderr = File.dup(2);
     }
     else version (Windows)
     {
         import core.sys.windows.windows;
-        stdin  = BufferedFile.dup!BufferedFile(GetStdHandle(STD_INPUT_HANDLE));
-        stdout = BufferedFile.dup!BufferedFile(GetStdHandle(STD_OUTPUT_HANDLE));
-        stderr = BufferedFile.dup!BufferedFile(GetStdHandle(STD_ERROR_HANDLE));
+        stdin  = File.dup(GetStdHandle(STD_INPUT_HANDLE));
+        stdout = File.dup(GetStdHandle(STD_OUTPUT_HANDLE));
+        stderr = File.dup(GetStdHandle(STD_ERROR_HANDLE));
     }
 }
 

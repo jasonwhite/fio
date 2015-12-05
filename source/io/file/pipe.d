@@ -46,7 +46,7 @@ Pipe!F pipe(F = File)()
 ///
 unittest
 {
-    auto p = pipe();
+    auto p = pipe!UnbufferedFile();
 
     // Write to one end of the pipe...
     immutable message = "Indubitably.";

@@ -791,24 +791,23 @@ unittest
 
 import std.typecons;
 import io.buffer.fixed;
-alias File = RefCounted!(FileBase, RefCountedAutoInitialize.no);
-alias BufferedFile = FixedBuffer!File;
+alias UnbufferedFile = RefCounted!(FileBase, RefCountedAutoInitialize.no);
+alias File = FixedBuffer!UnbufferedFile;
 
 unittest
 {
     import io.stream.types;
     import io.buffer.traits;
 
+    static assert(isSink!UnbufferedFile);
+    static assert(isSource!UnbufferedFile);
+    static assert(isSeekable!UnbufferedFile);
+    static assert(isBufferable!UnbufferedFile);
+
     static assert(isSink!File);
     static assert(isSource!File);
     static assert(isSeekable!File);
-
-    static assert(isSink!BufferedFile);
-    static assert(isSource!BufferedFile);
-    static assert(isSeekable!BufferedFile);
-
-    static assert(isBufferable!File);
-    static assert(isFlushable!BufferedFile);
+    static assert(isFlushable!File);
 }
 
 unittest
@@ -822,14 +821,14 @@ unittest
     foreach (bufSize; [0, 1, 2, 8, 16, 64, 256])
     {
         {
-            auto f = BufferedFile(tf.name, FileFlags.writeEmpty);
+            auto f = File(tf.name, FileFlags.writeEmpty);
             f.bufferSize = bufSize;
             assert(f.bufferSize == bufSize);
             assert(f.write(message) == message.length);
         }
 
         {
-            auto f = BufferedFile(tf.name, FileFlags.readExisting);
+            auto f = File(tf.name, FileFlags.readExisting);
             f.bufferSize = bufSize;
             assert(f.bufferSize == bufSize);
             assert(buf[0 .. f.read(buf)] == message);
@@ -846,7 +845,7 @@ unittest
 
     foreach (bufSize; [0, 1, 2, 8, 16, 64, 4096, 8192])
     {
-        auto f = BufferedFile(tf.name, FileFlags.readWriteEmpty);
+        auto f = File(tf.name, FileFlags.readWriteEmpty);
         f.bufferSize = bufSize;
         assert(f.bufferSize == bufSize);
 
