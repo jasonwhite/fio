@@ -215,7 +215,7 @@ struct FixedBufferBase(Stream)
 
             if (_position > 0)
             {
-                assert(stream.write(_buffer[0 .. _position]) == _position);
+                stream.writeExactly(_buffer[0 .. _position]);
                 _position = 0;
             }
         }
