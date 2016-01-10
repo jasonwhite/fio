@@ -1,9 +1,8 @@
 {
 	"name": "io",
-	"description": "IO streams",
-	"copyright": "Copyright © 2014, Jason White",
+	"description": "IO streams implemented from the ground up.",
+	"copyright": "Copyright © 2014-2016, Jason White",
 	"authors": ["Jason White"],
     "targetType": "library",
-	"dependencies": {
-	}
+    "license": "MIT"
 }

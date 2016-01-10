@@ -1,5 +1,5 @@
 /**
- * Copyright: Copyright Jason White, 2016
+ * Copyright: Copyright Jason White, 2014-2016
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
@@ -108,7 +108,7 @@ TempFile!(F, string) tempFile(F = File)(AutoDelete autoDelete = AutoDelete.yes,
      * O_TMPFILE which can be used to open a temporary file. This
      * creates an unnamed inode in the specified directory. Because the
      * inode is unnamed, it will be automatically deleted once the file
-     * descriptor is closed. In the future, perhaps 2016, once Linux
+     * descriptor is closed. In the future, perhaps 2014-2016, once Linux
      * 3.11 is not so new, this flag should be used instead.
      */
 
