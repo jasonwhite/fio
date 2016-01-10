@@ -1,6 +1,7 @@
-[![Build Status](https://travis-ci.org/jasonwhite/io.svg?branch=master)](https://travis-ci.org/jasonwhite/io)
+[buildbadge]: https://travis-ci.org/jasonwhite/io.svg?branch=master
+[buildstatus]: https://travis-ci.org/jasonwhite/io
 
-# IO Streams
+# IO Streams [![Build Status][buildbadge]][buildstatus]
 
 This is an IO stream library for D. The primary purpose of this package is to
 provide a better API that what is currently available in the D standard library.
