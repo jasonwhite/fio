@@ -3,8 +3,10 @@
 
 # IO Streams [![Build Status][buildbadge]][buildstatus]
 
+*This is a work in progress.*
+
 This is an IO stream library for D. The primary purpose of this package is to
-provide a better API that what is currently available in the D standard library.
+provide a better API than what is currently available in the D standard library.
 Secondly, it is meant to be fast. All file operations are implemented using the
 low-level system calls provided by the operating system.
 
