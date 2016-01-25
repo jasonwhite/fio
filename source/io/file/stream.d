@@ -38,6 +38,7 @@ version (Posix)
 {
     import core.sys.posix.fcntl;
     import core.sys.posix.unistd;
+    import core.sys.posix.sys.uio;
     import std.exception : ErrnoException;
 
     version (linux)
@@ -404,6 +405,57 @@ struct FileBase
         assert(File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
         assert(File(tf.name, FileFlags.readExisting).read(buf));
         assert(buf == data);
+    }
+
+    /**
+     * Vectorized write.
+     */
+    size_t writev(size_t Batch = 32)(in ubyte[][] bufs...)
+    {
+        version (Posix)
+        {
+            iovec[Batch] iov = void;
+
+            size_t i;
+            for (i = 0; i < bufs.length && i < iov.length; ++i)
+            {
+                iov[i].iov_base = cast(void*)bufs[i].ptr;
+                iov[i].iov_len  = bufs[i].length;
+            }
+
+            immutable n = .writev(_h, iov.ptr, cast(int)i);
+            sysEnforce(n != -1, "Failed to write to file");
+
+            // iov isn't large enough. Get the rest with tail recursion.
+            if (i < bufs.length)
+                return n + writev(bufs[i .. $]);
+
+            return n;
+        }
+        else version (Windows)
+        {
+            // TODO: Use WriteFileGather
+            static assert(false, "Implement me.");
+        }
+    }
+
+    unittest
+    {
+        auto tf = testFile();
+
+        immutable ubyte[] data1 = [1, 2, 3, 4, 5, 6, 7, 8];
+        immutable ubyte[] data2 = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        immutable ubyte[] data3 = [21, 22, 23, 24];
+        immutable totalLength = data1.length + data2.length + data3.length;
+        ubyte[totalLength] buf;
+
+        assert(File(tf.name, FileFlags.writeEmpty).writev(data1, data2, data3) == totalLength);
+        assert(File(tf.name, FileFlags.readExisting).read(buf) == buf.length);
+        assert(buf == data1 ~ data2 ~ data3);
+
+        assert(File(tf.name, FileFlags.writeEmpty).writev!2(data1, data2, data3) == totalLength);
+        assert(File(tf.name, FileFlags.readExisting).read(buf) == buf.length);
+        assert(buf == data1 ~ data2 ~ data3);
     }
 
     /// An offset from an absolute position
