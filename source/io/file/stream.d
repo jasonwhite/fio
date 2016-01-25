@@ -370,7 +370,7 @@ struct FileBase
      *   bufs = The buffers to read the data into. The length of each buffer
      *          specifies how much data should be read.
      *
-     * Returns the number of bytes that were read. 0 indicates that the end of
+     * Returns: The number of bytes that were read. 0 indicates that the end of
      * the file has been reached.
      */
     size_t readv(size_t Batch = 32)(ubyte[][] bufs...)
@@ -469,6 +469,12 @@ struct FileBase
 
     /**
      * Vectorized write.
+     *
+     * Params:
+     *   bufs = The buffers to write the data from. The length of each buffer
+     *          specifies how much data should be written.
+     *
+     * Returns: The number of bytes that were written.
      */
     size_t writev(size_t Batch = 32)(in ubyte[][] bufs...)
     {
