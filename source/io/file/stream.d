@@ -364,6 +364,66 @@ struct FileBase
     }
 
     /**
+     * Vectorized read.
+     *
+     * Params:
+     *   bufs = The buffers to read the data into. The length of each buffer
+     *          specifies how much data should be read.
+     *
+     * Returns the number of bytes that were read. 0 indicates that the end of
+     * the file has been reached.
+     */
+    size_t readv(size_t Batch = 32)(ubyte[][] bufs...)
+    {
+        version (Posix)
+        {
+            iovec[Batch] iov = void;
+
+            size_t i;
+            for (i = 0; i < bufs.length && i < iov.length; ++i)
+            {
+                iov[i].iov_base = cast(void*)bufs[i].ptr;
+                iov[i].iov_len  = bufs[i].length;
+            }
+
+            immutable n = .readv(_h, iov.ptr, cast(int)i);
+            sysEnforce(n != -1, "Failed to read from file");
+
+            // iov isn't large enough. Get the rest with tail recursion.
+            if (i < bufs.length)
+                return n + readv(bufs[i .. $]);
+
+            return n;
+        }
+        else version (Windows)
+        {
+            // TODO: Use ReadFileScatter
+            static assert(false, "Implement me.");
+        }
+    }
+
+    unittest
+    {
+        auto tf = testFile();
+
+        immutable ubyte[] data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+        ubyte[4] buf1;
+        ubyte[3] buf2;
+        ubyte[5] buf3;
+
+        static assert(buf1.length + buf2.length + buf3.length == data.length);
+
+        assert(File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
+        assert(File(tf.name, FileFlags.readExisting).readv(buf1, buf2, buf3) == data.length);
+        assert(buf1 ~ buf2 ~ buf3 == data);
+
+        assert(File(tf.name, FileFlags.writeEmpty).write(data) == data.length);
+        assert(File(tf.name, FileFlags.readExisting).readv!2(buf1, buf2, buf3) == data.length);
+        assert(buf1 ~ buf2 ~ buf3 == data);
+    }
+
+    /**
      * Writes data to the file.
      *
      * Params:
