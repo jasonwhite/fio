@@ -373,27 +373,43 @@ struct FileBase
      * Returns: The number of bytes that were read. 0 indicates that the end of
      * the file has been reached.
      */
-    size_t readv(size_t Batch = 32)(ubyte[][] bufs...)
+    size_t readv(size_t StackSize = 32)(ubyte[][] bufs...)
     {
+        import core.stdc.stdlib : malloc, free;
+
         version (Posix)
         {
-            iovec[Batch] iov = void;
-
-            size_t i;
-            for (i = 0; i < bufs.length && i < iov.length; ++i)
+            if (bufs.length <= StackSize)
             {
-                iov[i].iov_base = cast(void*)bufs[i].ptr;
-                iov[i].iov_len  = bufs[i].length;
+                iovec[StackSize] iov = void;
+
+                for (size_t i = 0; i < bufs.length; ++i)
+                {
+                    iov[i].iov_base = cast(void*)bufs[i].ptr;
+                    iov[i].iov_len  = bufs[i].length;
+                }
+
+                immutable n = .readv(_h, iov.ptr, cast(int)bufs.length);
+                sysEnforce(n != -1, "Failed to read from file");
+                return n;
             }
+            else
+            {
+                // Not enough space in stack-allocated buffer, fallback to using
+                // a heap-allocated buffer.
+                iovec* iov = cast(iovec*)malloc(iovec.sizeof * bufs.length);
+                scope (exit) free(iov);
 
-            immutable n = .readv(_h, iov.ptr, cast(int)i);
-            sysEnforce(n != -1, "Failed to read from file");
+                for (size_t i = 0; i < bufs.length; ++i)
+                {
+                    iov[i].iov_base = cast(void*)bufs[i].ptr;
+                    iov[i].iov_len  = bufs[i].length;
+                }
 
-            // iov isn't large enough. Get the rest with tail recursion.
-            if (i < bufs.length)
-                return n + readv(bufs[i .. $]);
-
-            return n;
+                immutable n = .readv(_h, iov, cast(int)bufs.length);
+                sysEnforce(n != -1, "Failed to read from file");
+                return n;
+            }
         }
         else version (Windows)
         {
@@ -476,27 +492,43 @@ struct FileBase
      *
      * Returns: The number of bytes that were written.
      */
-    size_t writev(size_t Batch = 32)(in ubyte[][] bufs...)
+    size_t writev(size_t StackSize = 32)(in ubyte[][] bufs...)
     {
+        import core.stdc.stdlib : malloc, free;
+
         version (Posix)
         {
-            iovec[Batch] iov = void;
-
-            size_t i;
-            for (i = 0; i < bufs.length && i < iov.length; ++i)
+            if (bufs.length <= StackSize)
             {
-                iov[i].iov_base = cast(void*)bufs[i].ptr;
-                iov[i].iov_len  = bufs[i].length;
+                iovec[StackSize] iov = void;
+
+                for (size_t i = 0; i < bufs.length; ++i)
+                {
+                    iov[i].iov_base = cast(void*)bufs[i].ptr;
+                    iov[i].iov_len  = bufs[i].length;
+                }
+
+                immutable n = .writev(_h, iov.ptr, cast(int)bufs.length);
+                sysEnforce(n != -1, "Failed to write to file");
+                return n;
             }
+            else
+            {
+                // Not enough space in stack-allocated buffer, fallback to using
+                // a heap-allocated buffer.
+                iovec* iov = cast(iovec*)malloc(iovec.sizeof * bufs.length);
+                scope (exit) free(iov);
 
-            immutable n = .writev(_h, iov.ptr, cast(int)i);
-            sysEnforce(n != -1, "Failed to write to file");
+                for (size_t i = 0; i < bufs.length; ++i)
+                {
+                    iov[i].iov_base = cast(void*)bufs[i].ptr;
+                    iov[i].iov_len  = bufs[i].length;
+                }
 
-            // iov isn't large enough. Get the rest with tail recursion.
-            if (i < bufs.length)
-                return n + writev(bufs[i .. $]);
-
-            return n;
+                immutable n = .writev(_h, iov, cast(int)bufs.length);
+                sysEnforce(n != -1, "Failed to write to file");
+                return n;
+            }
         }
         else version (Windows)
         {
