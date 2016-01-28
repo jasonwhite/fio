@@ -363,6 +363,19 @@ struct FileBase
         assert(buf[0 .. f.read(buf)] == data);
     }
 
+    version (Posix) private size_t readv(iovec* iov, ubyte[][] bufs)
+    {
+        for (size_t i = 0; i < bufs.length; ++i)
+        {
+            iov[i].iov_base = cast(void*)bufs[i].ptr;
+            iov[i].iov_len  = bufs[i].length;
+        }
+
+        immutable n = .readv(_h, iov, cast(int)bufs.length);
+        sysEnforce(n != -1, "Failed to read from file");
+        return n;
+    }
+
     /**
      * Vectorized read.
      *
@@ -382,16 +395,7 @@ struct FileBase
             if (bufs.length <= StackSize)
             {
                 iovec[StackSize] iov = void;
-
-                for (size_t i = 0; i < bufs.length; ++i)
-                {
-                    iov[i].iov_base = cast(void*)bufs[i].ptr;
-                    iov[i].iov_len  = bufs[i].length;
-                }
-
-                immutable n = .readv(_h, iov.ptr, cast(int)bufs.length);
-                sysEnforce(n != -1, "Failed to read from file");
-                return n;
+                return readv(iov.ptr, bufs);
             }
             else
             {
@@ -399,16 +403,7 @@ struct FileBase
                 // a heap-allocated buffer.
                 iovec* iov = cast(iovec*)malloc(iovec.sizeof * bufs.length);
                 scope (exit) free(iov);
-
-                for (size_t i = 0; i < bufs.length; ++i)
-                {
-                    iov[i].iov_base = cast(void*)bufs[i].ptr;
-                    iov[i].iov_len  = bufs[i].length;
-                }
-
-                immutable n = .readv(_h, iov, cast(int)bufs.length);
-                sysEnforce(n != -1, "Failed to read from file");
-                return n;
+                return readv(iov, bufs);
             }
         }
         else version (Windows)
@@ -483,6 +478,19 @@ struct FileBase
         assert(buf == data);
     }
 
+    version (Posix) private size_t writev(iovec* iov, in ubyte[][] bufs)
+    {
+        for (size_t i = 0; i < bufs.length; ++i)
+        {
+            iov[i].iov_base = cast(void*)bufs[i].ptr;
+            iov[i].iov_len  = bufs[i].length;
+        }
+
+        immutable n = .writev(_h, iov, cast(int)bufs.length);
+        sysEnforce(n != -1, "Failed to write to file");
+        return n;
+    }
+
     /**
      * Vectorized write.
      *
@@ -501,16 +509,7 @@ struct FileBase
             if (bufs.length <= StackSize)
             {
                 iovec[StackSize] iov = void;
-
-                for (size_t i = 0; i < bufs.length; ++i)
-                {
-                    iov[i].iov_base = cast(void*)bufs[i].ptr;
-                    iov[i].iov_len  = bufs[i].length;
-                }
-
-                immutable n = .writev(_h, iov.ptr, cast(int)bufs.length);
-                sysEnforce(n != -1, "Failed to write to file");
-                return n;
+                return writev(iov.ptr, bufs);
             }
             else
             {
@@ -518,16 +517,7 @@ struct FileBase
                 // a heap-allocated buffer.
                 iovec* iov = cast(iovec*)malloc(iovec.sizeof * bufs.length);
                 scope (exit) free(iov);
-
-                for (size_t i = 0; i < bufs.length; ++i)
-                {
-                    iov[i].iov_base = cast(void*)bufs[i].ptr;
-                    iov[i].iov_len  = bufs[i].length;
-                }
-
-                immutable n = .writev(_h, iov, cast(int)bufs.length);
-                sysEnforce(n != -1, "Failed to write to file");
-                return n;
+                return writev(iov, bufs);
             }
         }
         else version (Windows)
