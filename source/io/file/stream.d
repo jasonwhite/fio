@@ -408,8 +408,18 @@ struct FileBase
         }
         else version (Windows)
         {
-            // TODO: Use ReadFileScatter
-            static assert(false, "Implement me.");
+            // Dumb implementation for Windows.
+            size_t totalLength = 0;
+
+            foreach (buf; bufs)
+            {
+                if (immutable n = read(buf))
+                    totalLength += n;
+                else
+                    break;
+            }
+
+            return totalLength;
         }
     }
 
@@ -522,8 +532,18 @@ struct FileBase
         }
         else version (Windows)
         {
-            // TODO: Use WriteFileGather
-            static assert(false, "Implement me.");
+            // Dumb implementation for Windows.
+            size_t totalLength = 0;
+
+            foreach (buf; bufs)
+            {
+                if (immutable n = write(buf))
+                    totalLength += n;
+                else
+                    break;
+            }
+
+            return totalLength;
         }
     }
 
