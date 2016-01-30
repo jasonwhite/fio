@@ -140,8 +140,8 @@ struct FileFlags
 
         alias flags this;
 
-        this(Mode mode = Mode.init,
-             Access access = Access.init,
+        this(Mode mode,
+             Access access,
              Share share = Share.init) pure nothrow
         {
             // Disable buffering. Buffering is handled by $(D io.buffered).
@@ -191,8 +191,8 @@ struct FileFlags
 
         DWORD access, share, mode;
 
-        this(Mode mode = Mode.init,
-             Access access = Access.init,
+        this(Mode mode,
+             Access access,
              Share share = Share.init) pure nothrow
         {
             // Access flags
