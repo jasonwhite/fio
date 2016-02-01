@@ -89,7 +89,7 @@ unittest
     immutable data = chunks.join();
 
     auto f = tempFile.file;
-    f.writeExactly(data);
+    f.write(data);
     f.position = 0;
 
     assert(f.byChunk(4).equal(chunks));

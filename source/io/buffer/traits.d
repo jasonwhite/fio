@@ -5,7 +5,7 @@
  */
 module io.buffer.traits;
 
-import io.stream.types;
+import io.stream.primitives;
 
 
 /**

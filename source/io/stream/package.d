@@ -5,5 +5,5 @@
  */
 module io.stream;
 
+public import io.stream.helper;
 public import io.stream.primitives;
-public import io.stream.types;

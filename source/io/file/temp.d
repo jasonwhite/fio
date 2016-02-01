@@ -193,7 +193,7 @@ unittest
 {
     auto f = tempFile.file;
     assert(f.position == 0);
-    assert(f.write("Hello") == 5);
+    f.write("Hello");
     assert(f.position == 5);
 }
 

@@ -329,7 +329,7 @@ struct FileBase
      * Returns: The number of bytes that were read. 0 indicates that the end of
      * the file has been reached.
      */
-    size_t read(void[] buf)
+    size_t read(ubyte[] buf)
     in { assert(isOpen); }
     body
     {
@@ -453,7 +453,7 @@ struct FileBase
      *
      * Returns: The number of bytes that were written.
      */
-    size_t write(const(void)[] data)
+    size_t write(in ubyte[] data)
     in { assert(isOpen); }
     body
     {
@@ -943,7 +943,6 @@ struct FileBase
 
 unittest
 {
-    import io.stream.types;
     static assert(isSink!FileBase);
     static assert(isSource!FileBase);
     static assert(isSeekable!FileBase);
@@ -951,12 +950,11 @@ unittest
 
 import std.typecons;
 import io.buffer.fixed;
-alias UnbufferedFile = RefCounted!(FileBase, RefCountedAutoInitialize.no);
-alias File = FixedBuffer!UnbufferedFile;
+alias UnbufferedFile = RefCounted!(StreamHelper!FileBase, RefCountedAutoInitialize.no);
+alias File = RefCounted!(StreamHelper!(FixedBufferBase!FileBase), RefCountedAutoInitialize.no);
 
 unittest
 {
-    import io.stream.types;
     import io.buffer.traits;
 
     static assert(isSink!UnbufferedFile);

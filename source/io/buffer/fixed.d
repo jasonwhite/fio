@@ -21,7 +21,7 @@ struct FixedBufferBase(Stream)
     alias Offset = Stream.Offset;
 
     // Buffer to store the data to be read or written.
-    private void[] _buffer;
+    private ubyte[] _buffer;
 
     // Current read/write position in the buffer. For writes, this is >0 if data
     // has been written to the buffer but not flushed.
@@ -95,7 +95,7 @@ struct FixedBufferBase(Stream)
             private void beginRead() {}
         }
 
-        private size_t readPartial(void[] buf)
+        private size_t readPartial(ubyte[] buf)
         {
             import std.algorithm : min;
 
@@ -111,7 +111,7 @@ struct FixedBufferBase(Stream)
          * Reads data from the stream into the given buffer. The number of bytes
          * read is returned.
          */
-        size_t read(void[] buf)
+        size_t read(ubyte[] buf)
         {
             beginRead();
 
@@ -150,7 +150,7 @@ struct FixedBufferBase(Stream)
                 // The length of the window indicates how much data hasn't
                 // "really" been read from the stream. Just seek backwards that
                 // distance.
-                stream.skip(_position - _valid);
+                stream.seekTo(_position - _valid, From.here);
                 _position = _valid = 0;
             }
         }
@@ -164,7 +164,7 @@ struct FixedBufferBase(Stream)
          * Copies as much as possible to the stream buffer. The number of bytes
          * copied is returned.
          */
-        private size_t writePartial(in void[] buf)
+        private size_t writePartial(in ubyte[] buf)
         {
             import std.algorithm : min;
 
@@ -179,7 +179,7 @@ struct FixedBufferBase(Stream)
          * Writes the given data to the buffered stream. When the internal
          * buffer is completely filled, it is flushed to the underlying stream.
          */
-        size_t write(const(void)[] buf)
+        size_t write(in ubyte[] buf)
         {
             beginWrite();
 
@@ -187,17 +187,17 @@ struct FixedBufferBase(Stream)
             if (satisfied == buf.length)
                 return satisfied;
 
-            buf = buf[satisfied .. $];
+            const(ubyte)[] leftOver = buf[satisfied .. $];
 
             // Buffer is full and there is more to write. Flush it.
             flush();
 
             // Large write? Push it directly to the stream.
-            if (buf.length >= _buffer.length)
-                return satisfied + stream.write(buf);
+            if (leftOver.length >= _buffer.length)
+                return satisfied + stream.write(leftOver);
 
             // Write the rest.
-            return satisfied + writePartial(buf);
+            return satisfied + writePartial(leftOver);
         }
 
         alias put = write;
@@ -215,7 +215,8 @@ struct FixedBufferBase(Stream)
 
             if (_position > 0)
             {
-                stream.writeExactly(_buffer[0 .. _position]);
+                immutable bytesWritten = stream.write(_buffer[0 .. _position]);
+                assert(bytesWritten == _position);
                 _position = 0;
             }
         }
@@ -239,7 +240,7 @@ struct FixedBufferBase(Stream)
                         if (_position + offset < _valid)
                         {
                             _position += offset;
-                            return stream.position + (_position - _valid);
+                            return stream.seekTo(0, From.here) + (_position - _valid);
                         }
                     }
 
