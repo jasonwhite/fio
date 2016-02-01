@@ -5,8 +5,7 @@
  */
 module io.buffer.traits;
 
-import io.stream.primitives;
-
+import io.stream.traits;
 
 /**
  * Checks if the stream can be buffered. A stream that is exclusively read from
@@ -19,6 +18,8 @@ enum isBufferable(Stream) = (isSource!Stream ^ isSink!Stream) ||
 
 unittest
 {
+    import io.stream.interfaces;
+
     interface A : Source {}
     static assert(isBufferable!A);
 
@@ -50,6 +51,7 @@ enum isFlushable(Stream) =
 
 unittest
 {
+    import io.stream.interfaces;
     struct A {}
     static assert(!isFlushable!A);
 

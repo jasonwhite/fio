@@ -8,7 +8,7 @@
  */
 module io.buffer.fixed;
 
-import io.stream;
+import io.stream.traits;
 import io.buffer.traits;
 
 struct FixedBufferBase(Stream)

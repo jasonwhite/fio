@@ -950,8 +950,8 @@ unittest
 
 import std.typecons;
 import io.buffer.fixed;
-alias UnbufferedFile = RefCounted!(StreamHelper!FileBase, RefCountedAutoInitialize.no);
-alias File = RefCounted!(StreamHelper!(FixedBufferBase!FileBase), RefCountedAutoInitialize.no);
+alias UnbufferedFile = RefCounted!(StreamShim!FileBase, RefCountedAutoInitialize.no);
+alias File = RefCounted!(StreamShim!(FixedBufferBase!FileBase), RefCountedAutoInitialize.no);
 
 unittest
 {

@@ -3,16 +3,15 @@
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  */
-module io.stream.helper;
+module io.stream.shim;
 
-import io.stream.primitives;
-
-import std.traits;
+import io.stream.traits;
+import io.stream.types;
 
 /**
  * Wraps a stream to provide useful higher-level functions.
  */
-struct StreamHelper(Stream)
+struct StreamShim(Stream)
     if (isStream!Stream)
 {
     Stream stream;
@@ -71,6 +70,8 @@ struct StreamHelper(Stream)
 
     static if (isSink!Stream)
     {
+        import std.traits : isArray;
+
         /**
          * Writes an array of type T to the stream.
          *
