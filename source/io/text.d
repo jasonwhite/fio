@@ -202,3 +202,15 @@ void printfln(T...)(string format, auto ref T args)
     import io.range : splitter;
     return splitter!T(stream, '\n');
 }
+
+/**
+ * Like $(D byLine), but duplicates each line. Obviously, this is less efficient
+ * than using $(D byLine).
+ */
+@property auto byLineCopy(T = char, Stream)(Stream stream)
+    if (isSource!Stream)
+{
+    import io.range : splitter;
+    import std.algorithm.iteraton : map;
+    return splitter!T(stream, '\n').map!(l => l.idup);
+}
