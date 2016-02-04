@@ -329,7 +329,7 @@ struct FileBase
      * Returns: The number of bytes that were read. 0 indicates that the end of
      * the file has been reached.
      */
-    size_t read(ubyte[] buf)
+    size_t read(scope ubyte[] buf)
     in { assert(isOpen); }
     body
     {
@@ -386,7 +386,7 @@ struct FileBase
      * Returns: The number of bytes that were read. 0 indicates that the end of
      * the file has been reached.
      */
-    size_t readv(size_t StackSize = 32)(ubyte[][] bufs...)
+    size_t readv(size_t StackSize = 32)(scope ubyte[][] bufs...)
     {
         import core.stdc.stdlib : malloc, free;
 

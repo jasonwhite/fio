@@ -95,7 +95,7 @@ struct FixedBufferBase(Stream)
             private void beginRead() {}
         }
 
-        private size_t readPartial(ubyte[] buf)
+        private size_t readPartial(scope ubyte[] buf)
         {
             import std.algorithm : min;
 
@@ -111,7 +111,7 @@ struct FixedBufferBase(Stream)
          * Reads data from the stream into the given buffer. The number of bytes
          * read is returned.
          */
-        size_t read(ubyte[] buf)
+        size_t read(scope ubyte[] buf)
         {
             beginRead();
 
