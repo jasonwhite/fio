@@ -312,7 +312,7 @@ struct Splitter(T, Separator, Stream, alias splitFn = endsWithSeparator!(T, Sepa
     /**
      * Gets the current region in the stream.
      */
-    const(T)[] front()
+    const(T)[] front() const pure nothrow
     {
         version (assert)
         {
@@ -332,19 +332,22 @@ struct Splitter(T, Separator, Stream, alias splitFn = endsWithSeparator!(T, Sepa
     }
 }
 
-version (none) unittest
+unittest
 {
-    import std.range;
+    import std.range.primitives;
+    import io.file : File;
 
-    static assert(isInputRange!(Splitter!(char, char)));
-    static assert(isInputRange!(Splitter!(char, string)));
-    static assert(isInputRange!(Splitter!(int, int)));
-    static assert(isInputRange!(Splitter!(int, int[])));
+    alias S = File;
 
-    static assert(!isOutputRange!(Splitter!(char, char)));
-    static assert(!isForwardRange!(Splitter!(char, char)));
-    static assert(!isBidirectionalRange!(Splitter!(char, char)));
-    static assert(!isRandomAccessRange!(Splitter!(char, char)));
+    static assert(isInputRange!(Splitter!(char, char, S)));
+    static assert(isInputRange!(Splitter!(char, string, S)));
+    static assert(isInputRange!(Splitter!(int, int, S)));
+    static assert(isInputRange!(Splitter!(int, immutable(int)[], S)));
+
+    static assert(!isOutputRange!(Splitter!(char, char, S), char));
+    static assert(!isForwardRange!(Splitter!(char, char, S)));
+    static assert(!isBidirectionalRange!(Splitter!(char, char, S)));
+    static assert(!isRandomAccessRange!(Splitter!(char, char, S)));
 }
 
 /**
