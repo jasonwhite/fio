@@ -21,15 +21,15 @@ this package. Currently, these include [`std.stdio`][std.stdio],
 [std.stream]: http://dlang.org/phobos/std_stream.html
 [std.cstream]: http://dlang.org/phobos/std_cstream.html
 
-## Progress
+## Features
 
- - [x] File streams
-   - [x] File flags
-   - [x] Memory mapped files
-   - [x] Pipes
-   - [x] Temporary files
- - [x] Generic stream buffering
- - [x] Text serialization to streams
- - [x] Allow file streams to be shared.
- - [ ] Text deserialization from streams
- - [ ] LockingStream wrapper
+ * File streams
+ * Memory mapped files
+ * Pipes
+ * Temporary files
+ * Generic stream buffering
+ * Text serialization to streams
+
+## License
+
+[Boost license](/LICENSE.md)
