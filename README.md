@@ -10,17 +10,6 @@ currently available in the D standard library. Secondly, it is meant to be fast.
 All file operations are implemented using the low-level system calls provided by
 the operating system.
 
-The goal is to eventually replace the disparate IO modules in [Phobos][] with
-this package. Currently, these include [`std.stdio`][std.stdio],
-[`std.mmfile`][std.mmfile], [`std.stream`][std.stream], and
-[`std.cstream`][std.cstream].
-
-[Phobos]: http://dlang.org/phobos/
-[std.stdio]: http://dlang.org/phobos/std_stdio.html
-[std.mmfile]: http://dlang.org/phobos/std_mmfile.html
-[std.stream]: http://dlang.org/phobos/std_stream.html
-[std.cstream]: http://dlang.org/phobos/std_cstream.html
-
 ## Features
 
  * File streams
