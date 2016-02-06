@@ -211,6 +211,6 @@ void printfln(T...)(string format, auto ref T args)
     if (isSource!Stream)
 {
     import io.range : splitter;
-    import std.algorithm.iteraton : map;
+    import std.algorithm.iteration : map;
     return splitter!T(stream, '\n').map!(l => l.idup);
 }
