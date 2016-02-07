@@ -50,28 +50,10 @@ struct StreamShim(Stream)
         {
             return stream.read(cast(ubyte[])buf);
         }
-
-        /**
-         * Reads exactly the number of bytes requested from the stream. Throws
-         * an exception if it cannot be done. Returns the filled buffer.
-         *
-         * Throws: ReadException if the given buffer cannot be completely filled.
-         */
-        T[] readExactly(T)(T[] buf)
-        {
-            ubyte[] byteBuf = cast(ubyte[])buf;
-
-            if (stream.read(byteBuf) != byteBuf.length)
-                throw new ReadException("Failed to fill entire buffer from stream");
-
-            return buf;
-        }
     }
 
     static if (isSink!Stream)
     {
-        import std.traits : isArray;
-
         /**
          * Writes an array of type T to the stream.
          *
@@ -87,74 +69,6 @@ struct StreamShim(Stream)
             return stream.write(cast(const(ubyte)[])buf);
         }
 
-        /**
-         * Writes exactly the given buffer and no less. Throws an exception if
-         * it cannot be done.
-         *
-         * Throws: WriteException if the given buffer cannot be completely written.
-         */
-        void writeExactly(T)(in T[] buf)
-            if (isSink!Stream)
-        {
-            const(ubyte)[] byteBuf = cast(const(ubyte)[])buf;
-            if (stream.write(byteBuf) != byteBuf.length)
-                throw new WriteException("Failed to write entire buffer to stream");
-        }
-
-        // Ditto
-        void writeExactly(T)(const auto ref T value)
-            if (!isArray!T)
-        {
-            write((cast(ubyte*)&value)[0 .. T.sizeof]);
-        }
-
         alias put = write;
-    }
-
-    static if (isSeekable!Stream)
-    {
-        /**
-         * Set the position (in bytes) of a stream.
-         */
-        @property void position(Offset offset)
-        {
-            stream.seekTo(offset, From.start);
-        }
-
-        /**
-         * Get the position (in bytes) of a stream.
-         */
-        @property Offset position()
-        {
-            return stream.seekTo(0, From.here);
-        }
-
-        /**
-         * Skip the specified number of bytes forward or backward.
-         */
-        Offset skip(Offset offset)
-        {
-            return stream.seekTo(offset, From.here);
-        }
-    }
-
-    static if (isSource!Stream && isSeekable!Stream)
-    {
-        /**
-         * Reads the rest of the stream.
-         */
-        T[] readAll(T=ubyte)(Offset upTo = long.max)
-        {
-            import std.algorithm : min;
-            import std.array : uninitializedArray;
-
-            immutable remaining = min((stream.length - stream.position)/T.sizeof, upTo);
-
-            auto buf = uninitializedArray!(T)(remaining);
-
-            immutable bytesRead = stream.read(buf);
-
-            return buf[0 .. bytesRead/T.sizeof];
-        }
     }
 }
