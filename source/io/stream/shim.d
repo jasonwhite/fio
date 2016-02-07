@@ -105,7 +105,7 @@ struct StreamShim(Stream)
         void writeExactly(T)(const auto ref T value)
             if (!isArray!T)
         {
-            write((&value)[0 .. 1]);
+            write((cast(ubyte*)&value)[0 .. T.sizeof]);
         }
 
         alias put = write;

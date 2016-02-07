@@ -133,7 +133,7 @@ struct ByBlock(T, Stream)
      */
     void popFront()
     {
-        immutable n = _source.read((&_current)[0 .. 1]);
+        immutable n = _source.read((cast(ubyte*)&_current)[0 .. T.sizeof]);
 
         switch (n)
         {
