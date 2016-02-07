@@ -18,8 +18,6 @@ struct FixedBufferBase(Stream)
 
     alias stream this;
 
-    alias Offset = Stream.Offset;
-
     // Buffer to store the data to be read or written.
     private ubyte[] _buffer;
 
@@ -227,7 +225,7 @@ struct FixedBufferBase(Stream)
         /**
          * Seeks to the given position relative to the given starting point.
          */
-        Offset seekTo(Offset offset, From from = From.start)
+        long seekTo(long offset, From from = From.start)
         {
             static if (isSource!Stream)
             {

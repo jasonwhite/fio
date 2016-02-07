@@ -18,8 +18,6 @@ struct StreamShim(Stream)
 
     alias stream this;
 
-    alias Offset = Stream.Offset;
-
     /**
      * Copying is disabled. Reference counting should be used instead.
      */

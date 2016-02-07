@@ -566,9 +566,6 @@ struct FileBase
         assert(buf == data1 ~ data2 ~ data3);
     }
 
-    /// An offset from an absolute position
-    alias Offset = long;
-
     /**
      * Seeks relative to a position.
      *
@@ -576,7 +573,7 @@ struct FileBase
      *   offset = Offset relative to a reference point.
      *   from   = Optional reference point.
      */
-    Offset seekTo(Offset offset, From from = From.start)
+    long seekTo(long offset, From from = From.start)
     in { assert(isOpen); }
     body
     {
@@ -606,7 +603,7 @@ struct FileBase
                 case From.end:   whence = FILE_END;     break;
             }
 
-            Offset pos = void;
+            long pos = void;
             sysEnforce(SetFilePointerEx(_h, offset, &pos, whence),
                 "Failed to seek to position");
             return pos;
@@ -627,13 +624,13 @@ struct FileBase
         assert(f.seekTo(-5, From.end) == data.length - 5);
 
         // Test large offset
-        assert(f.seekTo(Offset.max) == Offset.max);
+        assert(f.seekTo(long.max) == long.max);
     }
 
     /**
      * Gets the size of the file.
      */
-    @property Offset length()
+    @property long length()
     in { assert(isOpen); }
     body
     {
@@ -674,7 +671,7 @@ struct FileBase
      * length of the file. If the file is extended, the new segment is not
      * guaranteed to be initialized to zeros.
      */
-    @property void length(Offset len)
+    @property void length(long len)
     in { assert(isOpen); }
     body
     {
@@ -752,13 +749,13 @@ struct FileBase
     version (Posix)
     {
         private int lockImpl(int operation, short type,
-            Offset start, Offset length)
+            long start, long length)
         {
             flock fl = {
                 l_type:   type,
                 l_whence: SEEK_SET,
                 l_start:  start,
-                l_len:    (length == Offset.max) ? 0 : length,
+                l_len:    (length == long.max) ? 0 : length,
                 l_pid:    -1,
             };
 
@@ -768,7 +765,7 @@ struct FileBase
     else version (Windows)
     {
         private BOOL lockImpl(alias F, Flags...)(
-            Offset start, Offset length, Flags flags)
+            long start, long length, Flags flags)
         {
             import std.conv : to;
 
@@ -796,7 +793,7 @@ struct FileBase
      * synchronized) statement.
      */
     void lock(LockType lockType = LockType.readWrite,
-        Offset start = 0, Offset length = Offset.max)
+        long start = 0, long length = long.max)
     in { assert(isOpen); }
     body
     {
@@ -826,7 +823,7 @@ struct FileBase
      * successfully locked.
      */
     bool tryLock(LockType lockType = LockType.readWrite,
-        Offset start = 0, Offset length = Offset.max)
+        long start = 0, long length = long.max)
     in { assert(isOpen); }
     body
     {
@@ -867,7 +864,7 @@ struct FileBase
         }
     }
 
-    void unlock(Offset start = 0, Offset length = Offset.max)
+    void unlock(long start = 0, long length = long.max)
     in { assert(isOpen); }
     body
     {

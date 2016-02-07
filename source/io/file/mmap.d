@@ -111,7 +111,7 @@ private struct MemoryMapImpl(T)
      * Throws: SysException if the memory map could not be created.
      */
     this(File file, Access access = Access.read, size_t length = 0,
-        File.Offset start = 0, bool share = true, void* address = null)
+        long start = 0, bool share = true, void* address = null)
     {
         import std.conv : to;
 
@@ -281,7 +281,7 @@ alias MemoryMap(T) = RefCounted!(MemoryMapImpl!T, RefCountedAutoInitialize.no);
  * Convenience function for creating a memory map.
  */
 auto memoryMap(T)(File file, Access access = Access.read,
-    size_t length = 0, File.Offset start = 0, bool share = true,
+    size_t length = 0, long start = 0, bool share = true,
     void* address = null)
 {
     return MemoryMap!T(file, access, length, start, share, address);
