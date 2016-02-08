@@ -83,6 +83,10 @@ void main()
 }
 ```
 
+## Documentation
+
+Documentation can be found [here](https://jasonwhite.github.io/io/).
+
 ## License
 
 [Boost license](/LICENSE.md)
