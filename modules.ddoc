@@ -1,0 +1,3 @@
+MODULES =
+	$(MODULE io.file.stream)
+	$(MODULE io.file.flags)
