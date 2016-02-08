@@ -1,3 +1,16 @@
 MODULES =
-	$(MODULE io.file.stream)
+    $(MODULE io.buffer.fixed)
+    $(MODULE io.buffer.traits)
+
 	$(MODULE io.file.flags)
+	$(MODULE io.file.mmap)
+	$(MODULE io.file.pipe)
+	$(MODULE io.file.stdio)
+	$(MODULE io.file.stream)
+	$(MODULE io.file.temp)
+
+    $(MODULE io.stream.package)
+    $(MODULE io.stream.interfaces)
+    $(MODULE io.stream.shim)
+    $(MODULE io.stream.traits)
+    $(MODULE io.stream.types)
