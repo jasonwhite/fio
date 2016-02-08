@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<meta charset="utf-8">
+	<title>index - IO Streams documentation</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<!-- styles -->
+	<link href="bootDoc/assets/css/bootstrap.css" rel="stylesheet">
+	<style type="text/css">
+		body {
+		padding-top: 60px;
+		padding-bottom: 40px;
+		}
+		.sidebar-nav {
+		padding: 9px 0;
+		}
+	</style>
+	<link href="bootDoc/assets/css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="bootDoc/bootdoc.css" rel="stylesheet">
+
+	<!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+	<!--[if lt IE 9]>
+		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- fav and touch icons -->
+	<link rel="shortcut icon" href="bootDoc/assets/ico/favicon.ico">
+	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootDoc/assets/ico/apple-touch-icon-114-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootDoc/assets/ico/apple-touch-icon-72-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" href="bootDoc/assets/ico/apple-touch-icon-57-precomposed.png">
+	
+	<!-- Introduce DDoc settings required by JavaScript -->
+	<script type="text/javascript">
+		var Title = 'index';
+		var SourceRepository = 'http://github.com/jasonwhite/io/tree/gh-pages';
+		var PackageSeparator = '.';
+	</script>
+	
+	<style type="text/css">
+		.ddoc-icon-variable { background-image: url('bootDoc/ddoc-icons/var.png'); }
+		.ddoc-icon-function { background-image: url('bootDoc/ddoc-icons/func.png'); }
+		.ddoc-icon-property { background-image: url('bootDoc/ddoc-icons/property.png'); }
+		.ddoc-icon-struct { background-image: url('bootDoc/ddoc-icons/struct.png'); }
+		.ddoc-icon-class { background-image: url('bootDoc/ddoc-icons/class.png'); }
+		.ddoc-icon-enum { background-image: url('bootDoc/ddoc-icons/enum.png'); }
+		.ddoc-icon-template { background-image: url('bootDoc/ddoc-icons/template.png'); }
+	</style>
+	</head>
+
+	<body>
+	<!--
+	JavaScript reaps the module list from this element.
+	This is required for the MODULES macro to be reusable
+	in a noscript element later.
+	-->
+	<ul id="module-list-source" class="hidden">
+		
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+	</ul>
+	
+	<div class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container-fluid">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="index.html">IO Streams</a>
+				<div class="nav-collapse">
+					<ul class="nav">
+						<li class="active"><a href="index.html">Reference</a></li>
+					</ul>
+					
+					<form id="gotosymbol" class="navbar-search pull-left hidden">
+						<input type="text" class="search-query" placeholder="Go to symbol in index" data-provide="typeahead" data-items="4">
+					</form>
+					
+					<p class="navbar-text pull-right"><a href="https://github.com/jasonwhite/io">Github Page</a></p>
+				</div><!--/.nav-collapse -->
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row-fluid">
+			<div class="span2">
+				<div class="well sidebar-nav">
+				<ul class="nav nav-list">
+					<li id="module-list" class="nav-header sidebar-list-entry">Modules<li>
+					<noscript>
+						
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+					</noscript>
+					<li id="symbol-list" class="nav-header sidebar-list-entry hidden">index</li>
+				</ul>
+				</div><!--/.well -->
+			</div><!--/span-->
+			
+			<div class="span10">
+				<div class="row-fluid">
+					<div class="span11">
+						<ul id="module-breadcrumb" class="breadcrumb">
+							<noscript><h1>index</h1></noscript>
+						</ul>
+						
+					</div>
+					<div class="span1 offset11">
+						<a href="index.html"><img src="bootDoc/assets/img/icon-github.png" alt="IO Streams"/></a>
+					</div>
+				</div>
+				<div id="declaration-list">
+					<dl><dt>License</dt><dd><a href="http://boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+</dd>
+<dt>Authors</dt><dd>Jason White
+
+</dd>
+<dt>Description:</dt><dd>
+This is a POSIX and Windows compatible IO stream library for D.
+<br><br>
+
+The primary purpose of this package is to provide a better API than what is
+currently available in the D standard library. Secondly, it is meant to be
+fast. All file operations are implemented using the low-level system calls
+provided by the operating system.
+
+</dd>
+<dt>Example:</dt><dd>
+Sorting lines from standard input.
+<pre class="d_code"><span class="d_keyword">import</span> io, std.array, std.algorithm;
+
+<span class="d_keyword">void</span> main()
+{
+    stdin
+        .byLineCopy
+        .array
+        .sort()
+        .each!println;
+}
+</pre>
+Working with temporary files.
+<pre class="d_code"><span class="d_keyword">import</span> io;
+
+<span class="d_keyword">void</span> main()
+{
+    <span class="d_comment">// Create a temporary file to write to. This returns the path to the file
+</span>    <span class="d_comment">// and its file handle. The file is automatically deleted when the file
+</span>    <span class="d_comment">// handle is closed. The file handle is closed when it falls out of scope.
+</span>    <span class="d_keyword">auto</span> temp = tempFile();
+
+    <span class="d_comment">// Print to standard output.
+</span>    println(<span class="d_string">"Temporary file path: "</span>, temp.path);
+
+    <span class="d_comment">// Write an arbitrary array to the stream.
+</span>    temp.file.write(<span class="d_string">"Hello world!"</span>);
+
+    <span class="d_comment">// Seek to the beginning.
+</span>    temp.file.position = 0;
+
+    <span class="d_comment">// Read in 5 characters.
+</span>    <span class="d_keyword">char</span>[5] buf;
+    temp.file.read(buf);
+    <span class="d_keyword">assert</span>(buf == <span class="d_string">"Hello"</span>);
+}
+</pre>
+Using a memory map.
+<pre class="d_code"><span class="d_keyword">import</span> io, std.parallelism, std.random;
+
+<span class="d_keyword">void</span> main()
+{
+    <span class="d_comment">// Creates a 1 GiB file
+</span>    <span class="d_keyword">auto</span> f = File(<span class="d_string">"big_random_file"</span>, FileFlags.writeNew);
+    f.length = 1024^^3; <span class="d_comment">// 1 GiB
+</span>
+    <span class="d_comment">// Fill the file with random data using a memory map.
+</span>    <span class="d_keyword">auto</span> map = f.memoryMap!size_t(Access.write);
+    <span class="d_keyword">foreach</span> (i, <span class="d_keyword">ref</span> e; parallel(map[]))
+        e = uniform!<span class="d_string">"[]"</span>(size_t.min, size_t.max);
+}
+</pre>
+
+</dd>
+</dl>
+
+				</div>
+				
+				<hr>
+				
+				<footer class="pull-left">
+					<p>Page generated with <a href="https://github.com/JakobOvrum/bootDoc">bootDoc</a>.</p>
+				</footer>
+				
+				<footer class="pull-right">
+					<p>&copy; Jason White 2014-2016</p>
+				</footer>
+			</div>
+		</div>
+	</div><!--/.fluid-container-->
+
+	<!-- Bootstrap javascript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="bootDoc/assets/js/jquery.min.js"></script>
+	<script src="bootDoc/assets/js/bootstrap.min.js"></script>
+	
+	<!-- bootDoc javascript
+	================================================== -->
+	<script src="bootDoc/bootdoc.js"></script>
+	
+	</body>
+</html>

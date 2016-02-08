@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<meta charset="utf-8">
+	<title>io.file.stream - IO Streams documentation</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<!-- styles -->
+	<link href="bootDoc/assets/css/bootstrap.css" rel="stylesheet">
+	<style type="text/css">
+		body {
+		padding-top: 60px;
+		padding-bottom: 40px;
+		}
+		.sidebar-nav {
+		padding: 9px 0;
+		}
+	</style>
+	<link href="bootDoc/assets/css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="bootDoc/bootdoc.css" rel="stylesheet">
+
+	<!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+	<!--[if lt IE 9]>
+		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- fav and touch icons -->
+	<link rel="shortcut icon" href="bootDoc/assets/ico/favicon.ico">
+	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootDoc/assets/ico/apple-touch-icon-114-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootDoc/assets/ico/apple-touch-icon-72-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" href="bootDoc/assets/ico/apple-touch-icon-57-precomposed.png">
+	
+	<!-- Introduce DDoc settings required by JavaScript -->
+	<script type="text/javascript">
+		var Title = 'io.file.stream';
+		var SourceRepository = 'http://github.com/jasonwhite/io/tree/master/source';
+		var PackageSeparator = '.';
+	</script>
+	
+	<style type="text/css">
+		.ddoc-icon-variable { background-image: url('bootDoc/ddoc-icons/var.png'); }
+		.ddoc-icon-function { background-image: url('bootDoc/ddoc-icons/func.png'); }
+		.ddoc-icon-property { background-image: url('bootDoc/ddoc-icons/property.png'); }
+		.ddoc-icon-struct { background-image: url('bootDoc/ddoc-icons/struct.png'); }
+		.ddoc-icon-class { background-image: url('bootDoc/ddoc-icons/class.png'); }
+		.ddoc-icon-enum { background-image: url('bootDoc/ddoc-icons/enum.png'); }
+		.ddoc-icon-template { background-image: url('bootDoc/ddoc-icons/template.png'); }
+	</style>
+	</head>
+
+	<body>
+	<!--
+	JavaScript reaps the module list from this element.
+	This is required for the MODULES macro to be reusable
+	in a noscript element later.
+	-->
+	<ul id="module-list-source" class="hidden">
+		
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+	</ul>
+	
+	<div class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container-fluid">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="index.html">IO Streams</a>
+				<div class="nav-collapse">
+					<ul class="nav">
+						<li class="active"><a href="index.html">Reference</a></li>
+					</ul>
+					
+					<form id="gotosymbol" class="navbar-search pull-left hidden">
+						<input type="text" class="search-query" placeholder="Go to symbol in io.file.stream" data-provide="typeahead" data-items="4">
+					</form>
+					
+					<p class="navbar-text pull-right"><a href="https://github.com/jasonwhite/io">Github Page</a></p>
+				</div><!--/.nav-collapse -->
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row-fluid">
+			<div class="span2">
+				<div class="well sidebar-nav">
+				<ul class="nav nav-list">
+					<li id="module-list" class="nav-header sidebar-list-entry">Modules<li>
+					<noscript>
+						
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+					</noscript>
+					<li id="symbol-list" class="nav-header sidebar-list-entry hidden">io.file.stream</li>
+				</ul>
+				</div><!--/.well -->
+			</div><!--/span-->
+			
+			<div class="span10">
+				<div class="row-fluid">
+					<div class="span11">
+						<ul id="module-breadcrumb" class="breadcrumb">
+							<noscript><h1>io.file.stream</h1></noscript>
+						</ul>
+						
+					</div>
+					<div class="span1 offset11">
+						<a href="index.html"><img src="bootDoc/assets/img/icon-github.png" alt="IO Streams"/></a>
+					</div>
+				</div>
+				<div id="declaration-list">
+					<dl><dt>License</dt><dd><a href="http://boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+</dd>
+<dt>Authors</dt><dd>Jason White
+
+</dd>
+<dt>Description:</dt><dd>
+This module provides a low-level file <span class="symbol-target" id="stream">&nbsp;</span><a class="symbol-link" href="#stream">stream</a> class.
+
+</dd>
+<dt>Synopsis:</dt><dd>
+<pre class="d_code"><span class="d_comment">// Open a new file in read/write mode. Throws an exception if the file exists.
+</span><span class="d_keyword">auto</span> f = File(<span class="d_string">"myfile"</span>, FileFlags.readWriteNew);
+
+<span class="d_comment">// Write an arbitrary array to the stream.
+</span>f.write(<span class="d_string">"Hello world!"</span>);
+
+<span class="d_comment">// Seek to the beginning.
+</span>f.position = 0;
+
+<span class="d_comment">// Read in 5 bytes.
+</span><span class="d_keyword">char</span> buf[5];
+f.read(buf);
+<span class="d_keyword">assert</span>(buf == <span class="d_string">"Hello"</span>);
+</pre>
+</dd>
+</dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="FileBase">&nbsp;</span><a class="symbol-link" href="#FileBase">FileBase</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A cross-platform wrapper around low-level file operations.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(string <i>name</i>, FileFlags <i>flags</i> = FileFlags.readExisting);
+</h3></div>
+<div class="declaration-content"><dl><p>Opens or creates a file by <i>name</i>. By default, an existing file is opened
+ in read-only mode.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>name</i></td>
+<td>The <i>name</i> of the file.</td></tr>
+<tr><td>FileFlags <i>flags</i></td>
+<td>How to open the file.</td></tr>
+</table></dd>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_comment">// Create a brand-new file and write to it. Throws an exception if the
+</span><span class="d_comment">// file already exists. The file is automatically closed when it falls
+</span><span class="d_comment">// out of scope.
+</span><span class="d_keyword">auto</span> f = File(<span class="d_string">"filename"</span>, FileFlags.writeNew);
+f.write(<span class="d_string">"Hello world!"</span>);
+</pre>
+</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(Handle <i>h</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Takes control of a file handle.
+</p>
+<p>It is assumed that we have exclusive control over the file handle and will
+ be closed upon destruction as usual. If non-exclusive control is desired,
+ use <span class="inlinecode">dup</span> instead.
+<br><br>
+
+ This function is useful in a couple of situations:
+ <ul>   <li>     The file must be opened with special flags that cannot be obtained
+     via <span class="inlinecode">FileFlags</span>
+   </li>
+   <li>     A special file handle must be opened (e.g., <span class="inlinecode">stdout</span>, a pipe).
+   </li>
+ </ul>
+
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Handle <i>h</i></td>
+<td>The handle to assume control over. For Posix, this is a file
+       descriptor (<span class="inlinecode">int</span>). For Windows, this is an object handle (<span class="inlinecode">       HANDLE</span>).</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>F <span class="symbol-target" id="dup">&nbsp;</span><a class="symbol-link" href="#dup">dup</a>(F = File)(Handle <i>h</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Duplicates the given platform-specific file handle. This is useful for
+ taking non-exclusive control over a file handle.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="close">&nbsp;</span><a class="symbol-link" href="#close">close</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Closes the stream if it is open. Otherwise, it does nothing.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure nothrow @property Handle <span class="symbol-target" id="handle">&nbsp;</span><a class="symbol-link" href="#handle">handle</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns the internal file <span class="symbol-target" id="handle">&nbsp;</span><a class="symbol-link" href="#handle">handle</a>. On POSIX, this is a file descriptor. On
+ Windows, this is an object <span class="symbol-target" id="handle">&nbsp;</span><a class="symbol-link" href="#handle">handle</a>.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>@property bool <span class="symbol-target" id="isOpen">&nbsp;</span><a class="symbol-link" href="#isOpen">isOpen</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns <span class="d_keyword">true</span> if the file is open.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="read">&nbsp;</span><a class="symbol-link" href="#read">read</a>(scope ubyte[] <i>buf</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Reads data from the file.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte[] <i>buf</i></td>
+<td>The buffer to <span class="symbol-target" id="read">&nbsp;</span><a class="symbol-link" href="#read">read</a> the data into. The length of the buffer
+         specifies how much data should be <span class="symbol-target" id="read">&nbsp;</span><a class="symbol-link" href="#read">read</a>.</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>The number of bytes that were <span class="symbol-target" id="read">&nbsp;</span><a class="symbol-link" href="#read">read</a>. 0 indicates that the end of
+ the file has been reached.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="readv">&nbsp;</span><a class="symbol-link" href="#readv">readv</a>(size_t StackSize = 32)(scope ubyte[][] <i>bufs</i>...);
+</h3></div>
+<div class="declaration-content"><dl><p>Vectorized read.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte[][] <i>bufs</i></td>
+<td>The buffers to read the data into. The length of each buffer
+          specifies how much data should be read.</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>The number of bytes that were read. 0 indicates that the end of
+ the file has been reached.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="write">&nbsp;</span><a class="symbol-link" href="#write">write</a>(in ubyte[] <i>data</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Writes <i>data</i> to the file.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte[] <i>data</i></td>
+<td>The <i>data</i> to <span class="symbol-target" id="write">&nbsp;</span><a class="symbol-link" href="#write">write</a> to the file. The length of the slice indicates
+          how much <i>data</i> should be written.</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>The number of bytes that were written.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="writev">&nbsp;</span><a class="symbol-link" href="#writev">writev</a>(size_t StackSize = 32)(in ubyte[][] <i>bufs</i>...);
+</h3></div>
+<div class="declaration-content"><dl><p>Vectorized write.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>ubyte[][] <i>bufs</i></td>
+<td>The buffers to write the data from. The length of each buffer
+          specifies how much data should be written.</td></tr>
+</table></dd>
+<dt>Returns</dt><dd>The number of bytes that were written.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>long <span class="symbol-target" id="seekTo">&nbsp;</span><a class="symbol-link" href="#seekTo">seekTo</a>(long <i>offset</i>, From <i>from</i> = From.start);
+</h3></div>
+<div class="declaration-content"><dl><p>Seeks relative to a position.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>long <i>offset</i></td>
+<td>Offset relative to a reference point.</td></tr>
+<tr><td>From <i>from</i></td>
+<td>Optional reference point.</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>@property long <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Gets the size of the file.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>@property void <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a>(long <i>len</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Sets the <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a> of the file. This can be used to truncate or extend the
+ <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a> of the file. If the file is extended, the new segment is not
+ guaranteed to be initialized to zeros.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>@property bool <span class="symbol-target" id="isTerminal">&nbsp;</span><a class="symbol-link" href="#isTerminal">isTerminal</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Checks if the file is a terminal.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="lock">&nbsp;</span><a class="symbol-link" href="#lock">lock</a>(LockType <i>lockType</i> = LockType.readWrite, long <i>start</i> = 0, long <i>length</i> = (long).max);
+</h3></div>
+<div class="declaration-content"><dl><p>Locks the specified file segment. If the file segment is already locked
+ by another process, waits until the existing <span class="symbol-target" id="lock">&nbsp;</span><a class="symbol-link" href="#lock">lock</a> is released.
+</p>
+<p>Note that this is a <i>per-process</i> <span class="symbol-target" id="lock">&nbsp;</span><a class="symbol-link" href="#lock">lock</a>. This locking mechanism should
+ not be used for thread-level synchronization. For that, use the <span class="inlinecode"> synchronized</span> statement.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>bool <span class="symbol-target" id="tryLock">&nbsp;</span><a class="symbol-link" href="#tryLock">tryLock</a>(LockType <i>lockType</i> = LockType.readWrite, long <i>start</i> = 0, long <i>length</i> = (long).max);
+</h3></div>
+<div class="declaration-content"><dl><p>Like <span class="inlinecode">lock</span>, but returns <span class="d_keyword">false</span> immediately if the lock is held by
+ another process. Returns <span class="d_keyword">true</span> if the specified region in the file was
+ successfully locked.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="sync">&nbsp;</span><a class="symbol-link" href="#sync">sync</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Syncs all modified cached data of the file to disk. This includes data
+ written to the file as well as meta data (e.g., last modified time, last
+ access time).</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="copyTo">&nbsp;</span><a class="symbol-link" href="#copyTo">copyTo</a>(File <i>other</i>, size_t <i>n</i> = ptrdiff_t.max);
+</h3></div>
+<div class="declaration-content"><dl><p>Copies the rest of this file to the <i>other</i>. The positions of both files
+ are appropriately incremented, as if one called read()/write() to copy
+ the file. The number of copied bytes is returned.</p>
+<dt>Examples</dt><dd>Copies the rest of this file to the <i>other</i>. The positions of both files
+ are appropriately incremented, as if one called read()/write() to copy
+ the file. The number of copied bytes is returned.
+<pre class="d_code">
+<span class="d_keyword">import</span> std.conv : to;
+
+<span class="d_keyword">auto</span> a = tempFile.file;
+<span class="d_keyword">auto</span> b = tempFile.file;
+<span class="d_keyword">immutable</span> s = <span class="d_string">"This will be copied to the other file."</span>;
+a.write(s);
+a.position = 0;
+a.<u>copyTo</u>(b);
+<span class="d_keyword">assert</span>(a.position == s.length);
+
+b.position = 0;
+
+<span class="d_keyword">char</span>[s.length] buf;
+<span class="d_keyword">assert</span>(b.read(buf) == s.length);
+<span class="d_keyword">assert</span>(buf == s);
+</pre>
+</dd></dl>
+</div>
+</div>
+</div>
+
+
+				</div>
+				
+				<hr>
+				
+				<footer class="pull-left">
+					<p>Page generated with <a href="https://github.com/JakobOvrum/bootDoc">bootDoc</a>.</p>
+				</footer>
+				
+				<footer class="pull-right">
+					<p>&copy; Jason White 2014-2016</p>
+				</footer>
+			</div>
+		</div>
+	</div><!--/.fluid-container-->
+
+	<!-- Bootstrap javascript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="bootDoc/assets/js/jquery.min.js"></script>
+	<script src="bootDoc/assets/js/bootstrap.min.js"></script>
+	
+	<!-- bootDoc javascript
+	================================================== -->
+	<script src="bootDoc/bootdoc.js"></script>
+	
+	</body>
+</html>

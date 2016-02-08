@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<meta charset="utf-8">
+	<title>io.file.flags - IO Streams documentation</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<!-- styles -->
+	<link href="bootDoc/assets/css/bootstrap.css" rel="stylesheet">
+	<style type="text/css">
+		body {
+		padding-top: 60px;
+		padding-bottom: 40px;
+		}
+		.sidebar-nav {
+		padding: 9px 0;
+		}
+	</style>
+	<link href="bootDoc/assets/css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="bootDoc/bootdoc.css" rel="stylesheet">
+
+	<!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+	<!--[if lt IE 9]>
+		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- fav and touch icons -->
+	<link rel="shortcut icon" href="bootDoc/assets/ico/favicon.ico">
+	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootDoc/assets/ico/apple-touch-icon-114-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootDoc/assets/ico/apple-touch-icon-72-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" href="bootDoc/assets/ico/apple-touch-icon-57-precomposed.png">
+	
+	<!-- Introduce DDoc settings required by JavaScript -->
+	<script type="text/javascript">
+		var Title = 'io.file.flags';
+		var SourceRepository = 'http://github.com/jasonwhite/io/tree/master/source';
+		var PackageSeparator = '.';
+	</script>
+	
+	<style type="text/css">
+		.ddoc-icon-variable { background-image: url('bootDoc/ddoc-icons/var.png'); }
+		.ddoc-icon-function { background-image: url('bootDoc/ddoc-icons/func.png'); }
+		.ddoc-icon-property { background-image: url('bootDoc/ddoc-icons/property.png'); }
+		.ddoc-icon-struct { background-image: url('bootDoc/ddoc-icons/struct.png'); }
+		.ddoc-icon-class { background-image: url('bootDoc/ddoc-icons/class.png'); }
+		.ddoc-icon-enum { background-image: url('bootDoc/ddoc-icons/enum.png'); }
+		.ddoc-icon-template { background-image: url('bootDoc/ddoc-icons/template.png'); }
+	</style>
+	</head>
+
+	<body>
+	<!--
+	JavaScript reaps the module list from this element.
+	This is required for the MODULES macro to be reusable
+	in a noscript element later.
+	-->
+	<ul id="module-list-source" class="hidden">
+		
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+	</ul>
+	
+	<div class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container-fluid">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="index.html">IO Streams</a>
+				<div class="nav-collapse">
+					<ul class="nav">
+						<li class="active"><a href="index.html">Reference</a></li>
+					</ul>
+					
+					<form id="gotosymbol" class="navbar-search pull-left hidden">
+						<input type="text" class="search-query" placeholder="Go to symbol in io.file.flags" data-provide="typeahead" data-items="4">
+					</form>
+					
+					<p class="navbar-text pull-right"><a href="https://github.com/jasonwhite/io">Github Page</a></p>
+				</div><!--/.nav-collapse -->
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row-fluid">
+			<div class="span2">
+				<div class="well sidebar-nav">
+				<ul class="nav nav-list">
+					<li id="module-list" class="nav-header sidebar-list-entry">Modules<li>
+					<noscript>
+						
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+					</noscript>
+					<li id="symbol-list" class="nav-header sidebar-list-entry hidden">io.file.flags</li>
+				</ul>
+				</div><!--/.well -->
+			</div><!--/span-->
+			
+			<div class="span10">
+				<div class="row-fluid">
+					<div class="span11">
+						<ul id="module-breadcrumb" class="breadcrumb">
+							<noscript><h1>io.file.flags</h1></noscript>
+						</ul>
+						
+					</div>
+					<div class="span1 offset11">
+						<a href="index.html"><img src="bootDoc/assets/img/icon-github.png" alt="IO Streams"/></a>
+					</div>
+				</div>
+				<div id="declaration-list">
+					<dl><dt>License</dt><dd><a href="http://boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+</dd>
+<dt>Authors</dt><dd>Jason White</dd>
+</dl>
+<hr><div class="row-fluid declaration"><h3>enum <span class="symbol-target" id="Mode">&nbsp;</span><a class="symbol-link" href="#Mode">Mode</a>: int;
+</h3></div>
+<div class="declaration-content"><dl><p>Specifies in what mode a file should be opened.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="none">&nbsp;</span><a class="symbol-link" href="#none">none</a></h3></div>
+<div class="declaration-content"><dl><p>Default mode. Not very useful.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="open">&nbsp;</span><a class="symbol-link" href="#open">open</a></h3></div>
+<div class="declaration-content"><dl><p>Opens an existing file. Unless combined with create, fails if the file
+ does not exist.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="create">&nbsp;</span><a class="symbol-link" href="#create">create</a></h3></div>
+<div class="declaration-content"><dl><p>Creates a new file. Fails if the file is opened without write access.
+ Fails if the file already exists and not combined with truncate or open.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="openOrCreate">&nbsp;</span><a class="symbol-link" href="#openOrCreate">openOrCreate</a></h3></div>
+<div class="declaration-content"><dl><p>Opens the file if it already exists or creates it if it does not.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="append">&nbsp;</span><a class="symbol-link" href="#append">append</a></h3></div>
+<div class="declaration-content"><dl><p>Allows only appending to the end of the file. Seek operations only affect
+ subsequent reads. Upon writing, the file pointer gets set to the end of
+ the file. Requires write access to the file.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="truncate">&nbsp;</span><a class="symbol-link" href="#truncate">truncate</a></h3></div>
+<div class="declaration-content"><dl><p>Truncates the file. This has no effect if the file has been created anew.
+ Requires write access to the file.</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>enum <span class="symbol-target" id="Share">&nbsp;</span><a class="symbol-link" href="#Share">Share</a>: int;
+</h3></div>
+<div class="declaration-content"><dl><p>Specifies what other processes are allowed to do to the file.
+</p>
+<dt>TODO:</dt><dd>
+Keep this? It's currently only used by Windows.</dd>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="none">&nbsp;</span><a class="symbol-link" href="#none">none</a></h3></div>
+<div class="declaration-content"><dl><p>Forbids sharing of the file.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="read">&nbsp;</span><a class="symbol-link" href="#read">read</a></h3></div>
+<div class="declaration-content"><dl><p>Allows others to <span class="symbol-target" id="read">&nbsp;</span><a class="symbol-link" href="#read">read</a> from the file.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="write">&nbsp;</span><a class="symbol-link" href="#write">write</a></h3></div>
+<div class="declaration-content"><dl><p>Allows others to <span class="symbol-target" id="write">&nbsp;</span><a class="symbol-link" href="#write">write</a> to the file.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="readWrite">&nbsp;</span><a class="symbol-link" href="#readWrite">readWrite</a></h3></div>
+<div class="declaration-content"><dl><p>Allows others to either read or write to the file.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="remove">&nbsp;</span><a class="symbol-link" href="#remove">remove</a></h3></div>
+<div class="declaration-content"><dl><p>Allows the file to deleted.</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="FileFlags">&nbsp;</span><a class="symbol-link" href="#FileFlags">FileFlags</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>File flags determine how a file stream is created and used.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readExisting">&nbsp;</span><a class="symbol-link" href="#readExisting">readExisting</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>An existing file is opened with read access. This is likely the most
+ commonly used set of flags.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeExisting">&nbsp;</span><a class="symbol-link" href="#writeExisting">writeExisting</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>An existing file is opened with write access.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeNew">&nbsp;</span><a class="symbol-link" href="#writeNew">writeNew</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A new file is created with write access. Fails if the file already
+ exists.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeAlways">&nbsp;</span><a class="symbol-link" href="#writeAlways">writeAlways</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A new file is either opened or created with write access.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeEmpty">&nbsp;</span><a class="symbol-link" href="#writeEmpty">writeEmpty</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A new file is either opened or created, truncated if necessary, with
+ write access. This ensures that an <i>empty</i> file is opened.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteExisting">&nbsp;</span><a class="symbol-link" href="#readWriteExisting">readWriteExisting</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>An existing file is opened with read/write access.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteNew">&nbsp;</span><a class="symbol-link" href="#readWriteNew">readWriteNew</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A new file is created with read/write access. Fails if the file
+ already exists.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteAlways">&nbsp;</span><a class="symbol-link" href="#readWriteAlways">readWriteAlways</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A new file is either opened or created with read/write access.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteEmpty">&nbsp;</span><a class="symbol-link" href="#readWriteEmpty">readWriteEmpty</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>A new file is either opened or created, truncated if necessary, with
+ read/write access. This ensures that an <i>empty</i> file is opened.
+</p>
+<p>Typical file flag configurations. These are converted to the underlying
+ platform-specific file flags at compile-time. Thus, there is zero
+ run-time overhead to using these pre-defined file flags.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure this(string <i>mode</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Construct the file flags from a <i>mode</i> string.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure void <span class="symbol-target" id="opAssign">&nbsp;</span><a class="symbol-link" href="#opAssign">opAssign</a>(string <i>mode</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Set flags via a <i>mode</i> string.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>static pure FileFlags <span class="symbol-target" id="parse">&nbsp;</span><a class="symbol-link" href="#parse">parse</a>(string <i>mode</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Parses an fopen-style <i>mode</i> string such as "r+". The string should be
+ accepted by the regular expression "(w(b|b+|+b)x?)|([ra](b|b+|+b))". That
+ is, all possible <i>mode</i> strings include:
+</p>
+<p>wb    Write truncated                  rb   Read existing
+   wb+   Read/write truncated             rb+  Read/write existing
+   w+b   Read/write truncated             r+b  Read/write existing
+   wbx   Write new                        ab   Append new
+   wb+x  Read/write new                   ab+  Append/read new
+   w+bx  Read/write new                   a+b  Append/read new
+<br><br>
+
+ The <i>mode</i> strings accepted here differs from those accepted by fopen.
+ Here, file streams are never opened in text <i>mode</i> -- only binary <i>mode</i>.
+ Text handling functionality is built on top of low-level file streams.
+ It does not make sense to distinguish between text and binary modes here.
+ fopen opens all files in text <i>mode</i> by default and the flag 'b' must be
+ specified in order to open in binary <i>mode</i>. Thus, an exception is thrown
+ here if 'b' is omitted in the specified <i>mode</i> string.
+
+</p>
+<dt>Note:</dt><dd>
+It is not advisable to use fopen-style <i>mode</i> strings. It is better
+ to use one of the predefined file flag configurations such as <span class="inlinecode"> FileFlags.readExisting</span> for greater readability and intent of meaning.</dd>
+<dt>Examples</dt><dd><pre class="d_code">
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"wb"</span>)   == FileFlags.writeEmpty);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"wb+"</span>)  == FileFlags.readWriteEmpty);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"w+b"</span>)  == FileFlags.readWriteEmpty);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"wbx"</span>)  == FileFlags.writeNew);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"wb+x"</span>) == FileFlags.readWriteNew);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"w+bx"</span>) == FileFlags.readWriteNew);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"rb"</span>)   == FileFlags.readExisting);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"rb+"</span>)  == FileFlags.readWriteExisting);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"r+b"</span>)  == FileFlags.readWriteExisting);
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"ab"</span>)   == FileFlags(Mode.openOrCreate | Mode.append, Access.write));
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"ab+"</span>)  == FileFlags(Mode.openOrCreate | Mode.append, Access.readWrite));
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"a+b"</span>)  == FileFlags(Mode.openOrCreate | Mode.append, Access.readWrite));
+</pre>
+</dd></dl>
+</div>
+</div>
+</div>
+
+
+				</div>
+				
+				<hr>
+				
+				<footer class="pull-left">
+					<p>Page generated with <a href="https://github.com/JakobOvrum/bootDoc">bootDoc</a>.</p>
+				</footer>
+				
+				<footer class="pull-right">
+					<p>&copy; Jason White 2014-2016</p>
+				</footer>
+			</div>
+		</div>
+	</div><!--/.fluid-container-->
+
+	<!-- Bootstrap javascript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="bootDoc/assets/js/jquery.min.js"></script>
+	<script src="bootDoc/assets/js/bootstrap.min.js"></script>
+	
+	<!-- bootDoc javascript
+	================================================== -->
+	<script src="bootDoc/bootdoc.js"></script>
+	
+	</body>
+</html>
