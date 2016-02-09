@@ -171,13 +171,25 @@ f.read(buf);
 </h3></div>
 <div class="declaration-content"><dl><p>A cross-platform wrapper around low-level file operations.</p>
 </dl>
-<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(string <i>name</i>, FileFlags <i>flags</i> = FileFlags.readExisting);
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>alias <span class="symbol-target" id="Handle">&nbsp;</span><a class="symbol-link" href="#Handle">Handle</a> = int;
+</h3></div>
+<div class="declaration-content"><dl><p>Platform-specific file handle. On Posix systems, this is the file
+ descriptor <pre style="display:inline;" class="d_inline_code">int</pre>. On Windows, this is a <pre style="display:inline;" class="d_inline_code">HANDLE</pre>.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>enum Handle <span class="symbol-target" id="InvalidHandle">&nbsp;</span><a class="symbol-link" href="#InvalidHandle">InvalidHandle</a>;
+</h3></div>
+<div class="declaration-content"><dl><p>Platform-specific file handle. On Posix systems, this is the file
+ descriptor <pre style="display:inline;" class="d_inline_code">int</pre>. On Windows, this is a <pre style="display:inline;" class="d_inline_code">HANDLE</pre>.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(string <i>name</i>, FileFlags <i>flags</i> = FileFlags.readExisting);
 </h3></div>
 <div class="declaration-content"><dl><p>Opens or creates a file by <i>name</i>. By default, an existing file is opened
  in read-only mode.
 </p>
 <dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>string <i>name</i></td>
-<td>The <i>name</i> of the file.</td></tr>
+<td>Path to the file to open.</td></tr>
 <tr><td>FileFlags <i>flags</i></td>
 <td>How to open the file.</td></tr>
 </table></dd>
@@ -296,19 +308,41 @@ f.write(<span class="d_string">"Hello world!"</span>);
 </div>
 <hr><div class="row-fluid declaration"><h3>@property long <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a>();
 </h3></div>
-<div class="declaration-content"><dl><p>Gets the size of the file.</p>
+<div class="declaration-content"><dl><p>Gets the size of the file.
+</p>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_keyword">auto</span> f = File(<span class="d_string">"foobar"</span>, FileFlags.writeEmpty);
+f.write(<span class="d_string">"test"</span>);
+<span class="d_keyword">assert</span>(f.<u>length</u> == 4);
+</pre>
+</dd>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>@property void <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a>(long <i>len</i>);
 </h3></div>
 <div class="declaration-content"><dl><p>Sets the <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a> of the file. This can be used to truncate or extend the
  <span class="symbol-target" id="length">&nbsp;</span><a class="symbol-link" href="#length">length</a> of the file. If the file is extended, the new segment is not
- guaranteed to be initialized to zeros.</p>
+ guaranteed to be initialized to zeros.
+</p>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_keyword">auto</span> f = File(<span class="d_string">"foobar"</span>, FileFlags.writeEmpty);
+f.<u>length</u> = 42;
+<span class="d_keyword">assert</span>(f.<u>length</u> == 42);
+</pre>
+</dd>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>@property bool <span class="symbol-target" id="isTerminal">&nbsp;</span><a class="symbol-link" href="#isTerminal">isTerminal</a>();
 </h3></div>
-<div class="declaration-content"><dl><p>Checks if the file is a terminal.</p>
+<div class="declaration-content"><dl><p>Checks if the file refers to a terminal.
+</p>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_keyword">assert</span>(stdin.<u>isTerminal</u>);
+<span class="d_keyword">assert</span>(stderr.<u>isTerminal</u>);
+<span class="d_keyword">assert</span>(stdout.<u>isTerminal</u>);
+<span class="d_keyword">assert</span>(!File(<span class="d_string">"test"</span>, FileFlags.writeAlways).<u>isTerminal</u>);
+</pre>
+</dd>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="lock">&nbsp;</span><a class="symbol-link" href="#lock">lock</a>(LockType <i>lockType</i> = LockType.readWrite, long <i>start</i> = 0, long <i>length</i> = (long).max);

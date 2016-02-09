@@ -147,7 +147,7 @@
 </dl>
 <hr><div class="row-fluid declaration"><h3>enum <span class="symbol-target" id="Mode">&nbsp;</span><a class="symbol-link" href="#Mode">Mode</a>: int;
 </h3></div>
-<div class="declaration-content"><dl><p>Specifies in what mode a file should be opened.</p>
+<div class="declaration-content"><dl><p>Specifies in what mode a file should be opened. These flags can be combined.</p>
 </dl>
 <div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="none">&nbsp;</span><a class="symbol-link" href="#none">none</a></h3></div>
 <div class="declaration-content"><dl><p>Default mode. Not very useful.</p>
@@ -182,10 +182,11 @@
 </div>
 <hr><div class="row-fluid declaration"><h3>enum <span class="symbol-target" id="Share">&nbsp;</span><a class="symbol-link" href="#Share">Share</a>: int;
 </h3></div>
-<div class="declaration-content"><dl><p>Specifies what other processes are allowed to do to the file.
+<div class="declaration-content"><dl><p>Specifies what other processes are allowed to do to the file. These flags can
+ be combined.
 </p>
-<dt>TODO:</dt><dd>
-Keep this? It's currently only used by Windows.</dd>
+<dt>Windows specific:</dt><dd>
+Currently only used by Windows.</dd>
 </dl>
 <div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3><span class="symbol-target" id="none">&nbsp;</span><a class="symbol-link" href="#none">none</a></h3></div>
 <div class="declaration-content"><dl><p>Forbids sharing of the file.</p>
@@ -211,130 +212,154 @@ Keep this? It's currently only used by Windows.</dd>
 </div>
 <hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="FileFlags">&nbsp;</span><a class="symbol-link" href="#FileFlags">FileFlags</a>;
 </h3></div>
-<div class="declaration-content"><dl><p>File flags determine how a file stream is created and used.</p>
+<div class="declaration-content"><dl><p>File flags that determine how a file stream is created and used.
+</p>
+<p>Since all methods in this struct are pure, the high-level configuration flags
+ given here are converted to the platform-specific file flags at compile time.
+
+</p>
+<dt>See Also</dt><dd><span class="inlinecode">io.file.stream</span>
+
+</dd>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_comment">// Creates the file "foobar", truncates it, and opens it in write-only mode
+</span><span class="d_keyword">auto</span> f = File(<span class="d_string">"foobar"</span>, <u>FileFlags</u>.writeEmpty);
+</pre>
+</dd>
 </dl>
 <div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readExisting">&nbsp;</span><a class="symbol-link" href="#readExisting">readExisting</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>An existing file is opened with read access. This is likely the most
- commonly used set of flags.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+ commonly used set of flags.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeExisting">&nbsp;</span><a class="symbol-link" href="#writeExisting">writeExisting</a>;
 </h3></div>
-<div class="declaration-content"><dl><p>An existing file is opened with write access.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+<div class="declaration-content"><dl><p>An existing file is opened with write access.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeNew">&nbsp;</span><a class="symbol-link" href="#writeNew">writeNew</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>A new file is created with write access. Fails if the file already
- exists.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+ exists.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeAlways">&nbsp;</span><a class="symbol-link" href="#writeAlways">writeAlways</a>;
 </h3></div>
-<div class="declaration-content"><dl><p>A new file is either opened or created with write access.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+<div class="declaration-content"><dl><p>A new file is either opened or created with write access.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="writeEmpty">&nbsp;</span><a class="symbol-link" href="#writeEmpty">writeEmpty</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>A new file is either opened or created, truncated if necessary, with
- write access. This ensures that an <i>empty</i> file is opened.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+ write access. This ensures that an <i>empty</i> file is opened.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteExisting">&nbsp;</span><a class="symbol-link" href="#readWriteExisting">readWriteExisting</a>;
 </h3></div>
-<div class="declaration-content"><dl><p>An existing file is opened with read/write access.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+<div class="declaration-content"><dl><p>An existing file is opened with read/write access.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteNew">&nbsp;</span><a class="symbol-link" href="#readWriteNew">readWriteNew</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>A new file is created with read/write access. Fails if the file
- already exists.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+ already exists.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteAlways">&nbsp;</span><a class="symbol-link" href="#readWriteAlways">readWriteAlways</a>;
 </h3></div>
-<div class="declaration-content"><dl><p>A new file is either opened or created with read/write access.
-</p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+<div class="declaration-content"><dl><p>A new file is either opened or created with read/write access.</p>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static immutable FileFlags <span class="symbol-target" id="readWriteEmpty">&nbsp;</span><a class="symbol-link" href="#readWriteEmpty">readWriteEmpty</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>A new file is either opened or created, truncated if necessary, with
- read/write access. This ensures that an <i>empty</i> file is opened.
+ read/write access. This ensures that an <i>empty</i> file is opened.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>pure nothrow this(Mode <i>mode</i>, Access <i>access</i>, Share <i>share</i> = Share.init);
+</h3></div>
+<div class="declaration-content"><dl><p>Constructs the <span class="inlinecode">FileFlag</span> with the given <i>mode</i>, <i>access</i>, and <i>share</i>
+ attributes. These high-level flags are converted to the
+ equivalent platform-specific flags that are needed when opening the
+ file.
 </p>
-<p>Typical file flag configurations. These are converted to the underlying
- platform-specific file flags at compile-time. Thus, there is zero
- run-time overhead to using these pre-defined file flags.</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Mode <i>mode</i></td>
+<td>Mode the file should be opened in. That is, to open, create,
+          append, or truncate the file.</td></tr>
+<tr><td>Access <i>access</i></td>
+<td>The permissions on the file stream. That is, read <i>access</i>,
+            write <i>access</i>, or both.</td></tr>
+<tr><td>Share <i>share</i></td>
+<td>The sharing permissions other processes are allowed on the
+           file stream when trying to open the same file. By default,
+           other processes are prevented from opening the file if they
+           request read, write, or delete <i>access</i>. If you wish to allow
+           other processes to read the file while it is open in this
+           process, set this to <span class="inlinecode">Share.read</span>. Currently only used
+           by Windows.</td></tr>
+</table></dd>
+<dt>Windows specific:</dt><dd>
+The <i>share</i> parameter is currently only used by Windows.
+
+</dd>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_keyword">immutable</span> flags = FileFlags(Mode.open, Access.read);
+</pre>
+</dd>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>pure this(string <i>mode</i>);
+<br>pure void <span class="symbol-target" id="opAssign">&nbsp;</span><a class="symbol-link" href="#opAssign">opAssign</a>(string <i>mode</i>);
 </h3></div>
-<div class="declaration-content"><dl><p>Construct the file flags from a <i>mode</i> string.</p>
-</dl>
-</div>
-<hr><div class="row-fluid declaration"><h3>pure void <span class="symbol-target" id="opAssign">&nbsp;</span><a class="symbol-link" href="#opAssign">opAssign</a>(string <i>mode</i>);
-</h3></div>
-<div class="declaration-content"><dl><p>Set flags via a <i>mode</i> string.</p>
-</dl>
+<div class="declaration-content"><dl><p>Constructs the file flags from a <i>mode</i> string.
+</p>
+<p>This simply calls <a class="symbol-link" href="#FileFlags.parse"><span class="inlinecode">FileFlags.parse</span></a>.
+
+</p>
+<dt>See Also</dt><dd><a class="symbol-link" href="#FileFlags.parse"><span class="inlinecode">FileFlags.parse</span></a></dd>
+<dt>Examples</dt><dd><pre class="d_code">
+FileFlags ff = <span class="d_string">"wb+"</span>;
+<span class="d_keyword">assert</span>(ff == FileFlags.readWriteEmpty);
+<span class="d_keyword">assert</span>(ff == FileFlags(<span class="d_string">"wb+"</span>));
+</pre>
+</dd></dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>static pure FileFlags <span class="symbol-target" id="parse">&nbsp;</span><a class="symbol-link" href="#parse">parse</a>(string <i>mode</i>);
 </h3></div>
-<div class="declaration-content"><dl><p>Parses an fopen-style <i>mode</i> string such as "r+". The string should be
- accepted by the regular expression "(w(b|b+|+b)x?)|([ra](b|b+|+b))". That
- is, all possible <i>mode</i> strings include:
+<div class="declaration-content"><dl><p>Parses an fopen-style <i>mode</i> string such as "r+". That all possible <i>mode</i>
+ strings include:
 </p>
-<p>wb    Write truncated                  rb   Read existing
-   wb+   Read/write truncated             rb+  Read/write existing
-   w+b   Read/write truncated             r+b  Read/write existing
-   wbx   Write new                        ab   Append new
-   wb+x  Read/write new                   ab+  Append/read new
-   w+bx  Read/write new                   a+b  Append/read new
+<p><table>     <tr><th>Mode String</th> <th>Meaning</th></tr>
+     <tr><td><span class="inlinecode">"wb"</span></td>   <td>Write truncated</td></tr>
+     <tr><td><span class="inlinecode">"wb+"</span></td>  <td>Read/write truncated</td></tr>
+     <tr><td><span class="inlinecode">"w+b"</span></td>  <td>Read/write truncated</td></tr>
+     <tr><td><span class="inlinecode">"wbx"</span></td>  <td>Write new</td></tr>
+     <tr><td><span class="inlinecode">"wb+x"</span></td> <td>Read/write new</td></tr>
+     <tr><td><span class="inlinecode">"w+bx"</span></td> <td>Read/write new</td></tr>
+     <tr><td><span class="inlinecode">"rb"</span></td>   <td>Read existing"</td></tr>
+     <tr><td><span class="inlinecode">"rb+"</span></td>  <td>Read/write existing"</td></tr>
+     <tr><td><span class="inlinecode">"r+b"</span></td>  <td>Read/write existing"</td></tr>
+     <tr><td><span class="inlinecode">"ab"</span></td>   <td>Append new"</td></tr>
+     <tr><td><span class="inlinecode">"ab+"</span></td>  <td>Append/read new"</td></tr>
+     <tr><td><span class="inlinecode">"a+b"</span></td>  <td>Append/read new"</td></tr>
+ </table>
 <br><br>
 
- The <i>mode</i> strings accepted here differs from those accepted by fopen.
- Here, file streams are never opened in text <i>mode</i> -- only binary <i>mode</i>.
+ The mode strings accepted here differ from those accepted by <span class="inlinecode">fopen</span>.
+ Here, file streams are never opened in text mode -- only binary <i>mode</i>.
  Text handling functionality is built on top of low-level file streams.
  It does not make sense to distinguish between text and binary modes here.
- fopen opens all files in text <i>mode</i> by default and the flag 'b' must be
- specified in order to open in binary <i>mode</i>. Thus, an exception is thrown
- here if 'b' is omitted in the specified <i>mode</i> string.
+ <span class="inlinecode">fopen</span> opens all files in text mode by default and the flag 'b' must
+ be specified in order to open in binary mode. Thus, an exception is
+ thrown here if 'b' is omitted in the specified <i>mode</i> string.
 
 </p>
 <dt>Note:</dt><dd>
-It is not advisable to use fopen-style <i>mode</i> strings. It is better
- to use one of the predefined file flag configurations such as <span class="inlinecode"> FileFlags.readExisting</span> for greater readability and intent of meaning.</dd>
+It is not advisable to use fopen-style mode strings. It is better
+ to use one of the predefined file flag configurations such as
+ <a class="symbol-link" href="#FileFlags.readExisting"><span class="inlinecode">FileFlags.readExisting</span></a> for greater readability and intent of
+ meaning.</dd>
 <dt>Examples</dt><dd><pre class="d_code">
 <span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"wb"</span>)   == FileFlags.writeEmpty);
 <span class="d_keyword">static</span> <span class="d_keyword">assert</span>(FileFlags(<span class="d_string">"wb+"</span>)  == FileFlags.readWriteEmpty);
