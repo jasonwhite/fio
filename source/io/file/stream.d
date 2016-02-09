@@ -122,7 +122,10 @@ T sysEnforce(T, string file = __FILE__, size_t line = __LINE__)
  */
 struct FileBase
 {
-    // Platform-specific file handle
+    /**
+     * Platform-specific file handle. On Posix systems, this is the file
+     * descriptor `int`. On Windows, this is a `HANDLE`.
+     */
     version (Posix)
     {
         alias Handle = int;
@@ -144,7 +147,7 @@ struct FileBase
      * in read-only mode.
      *
      * Params:
-     *     name = The name of the file.
+     *     name = Path to the file to open.
      *     flags = How to open the file.
      *
      * Example:
@@ -629,6 +632,13 @@ struct FileBase
 
     /**
      * Gets the size of the file.
+     *
+     * Example:
+     * ---
+     * auto f = File("foobar", FileFlags.writeEmpty);
+     * f.write("test");
+     * assert(f.length == 4);
+     * ---
      */
     @property long length()
     in { assert(isOpen); }
@@ -670,6 +680,13 @@ struct FileBase
      * Sets the length of the file. This can be used to truncate or extend the
      * length of the file. If the file is extended, the new segment is not
      * guaranteed to be initialized to zeros.
+     *
+     * Example:
+     * ---
+     * auto f = File("foobar", FileFlags.writeEmpty);
+     * f.length = 42;
+     * assert(f.length == 42);
+     * ---
      */
     @property void length(long len)
     in { assert(isOpen); }
@@ -715,7 +732,15 @@ struct FileBase
     }
 
     /**
-     * Checks if the file is a terminal.
+     * Checks if the file refers to a terminal.
+     *
+     * Example:
+     * ---
+     * assert(stdin.isTerminal);
+     * assert(stderr.isTerminal);
+     * assert(stdout.isTerminal);
+     * assert(!File("test", FileFlags.writeAlways).isTerminal);
+     * ---
      */
     @property bool isTerminal()
     in { assert(isOpen); }
@@ -729,6 +754,12 @@ struct FileBase
         {
             return GetFileType(_h) == FILE_TYPE_CHAR;
         }
+    }
+
+    unittest
+    {
+        auto tf = testFile();
+        assert(!File(tf.name, FileFlags.writeEmpty).isTerminal);
     }
 
     enum LockType
