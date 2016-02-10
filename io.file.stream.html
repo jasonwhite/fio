@@ -368,33 +368,6 @@ f.<u>length</u> = 42;
  access time).</p>
 </dl>
 </div>
-<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="copyTo">&nbsp;</span><a class="symbol-link" href="#copyTo">copyTo</a>(File <i>other</i>, size_t <i>n</i> = ptrdiff_t.max);
-</h3></div>
-<div class="declaration-content"><dl><p>Copies the rest of this file to the <i>other</i>. The positions of both files
- are appropriately incremented, as if one called read()/write() to copy
- the file. The number of copied bytes is returned.</p>
-<dt>Examples</dt><dd>Copies the rest of this file to the <i>other</i>. The positions of both files
- are appropriately incremented, as if one called read()/write() to copy
- the file. The number of copied bytes is returned.
-<pre class="d_code">
-<span class="d_keyword">import</span> std.conv : to;
-
-<span class="d_keyword">auto</span> a = tempFile.file;
-<span class="d_keyword">auto</span> b = tempFile.file;
-<span class="d_keyword">immutable</span> s = <span class="d_string">"This will be copied to the other file."</span>;
-a.write(s);
-a.position = 0;
-a.<u>copyTo</u>(b);
-<span class="d_keyword">assert</span>(a.position == s.length);
-
-b.position = 0;
-
-<span class="d_keyword">char</span>[s.length] buf;
-<span class="d_keyword">assert</span>(b.read(buf) == s.length);
-<span class="d_keyword">assert</span>(buf == s);
-</pre>
-</dd></dl>
-</div>
 </div>
 </div>
 
