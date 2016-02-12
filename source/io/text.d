@@ -2,10 +2,6 @@
  * Copyright: Copyright Jason White, 2014-2016
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
- *
- * TODO: Find a more elegant way of reading and writing text.
- *
- * TODO: Be able to set the default output.
  */
 module io.text;
 

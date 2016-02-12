@@ -2,6 +2,17 @@
  * Copyright: Copyright Jason White, 2014-2016
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
+ *
+ * Description:
+ * This module provides _range interfaces for streams. This is useful for using
+ * many of the _range operations in $(D std._range) and $(D std.algorithm).
+ *
+ * There is an important distinction between streams and ranges to be made.
+ * Fundamentally, a stream is a unidirectional $(I stream) of bytes. That is,
+ * there is no going backwards and there is no saving the current position (as
+ * bidirectional and forward ranges can do). This provides a good mapping to
+ * input ranges and output ranges. As streams only operate on raw bytes, ranges
+ * provide an abstraction to operate on more complex data types.
  */
 module io.range;
 
@@ -25,11 +36,27 @@ struct ByChunk(Stream)
         size_t _valid;
     }
 
+    /**
+     * Initializes the range. A byte buffer with the given size is allocated to
+     * hold the chunks.
+     *
+     * Params:
+     *   source = A stream that can be read from.
+     *   size = The size of each chunk to read at a time.
+     */
     this(Stream source, size_t size = 4096)
     {
         this(source, new ubyte[](size));
     }
 
+    /**
+     * Initializes the range with the specified buffer. This is useful for
+     * providing your own buffer that may be stack allocated.
+     *
+     * Params:
+     *   source = A stream that can be read from.
+     *   buffer = A byte array to hold each chunk as it is read.
+     */
     this(Stream source, ubyte[] buffer)
     {
         _source = source;
@@ -46,7 +73,11 @@ struct ByChunk(Stream)
     }
 
     /**
-     * Returns the current chunk of the stream.
+     * Returns: The current chunk of the stream.
+     *
+     * Note that a full chunk is not guaranteed to be returned. In the event of
+     * a partial read from the stream, this will be less than the maximum chunk
+     * size. Code should be impartial to the size of the returned chunk.
      */
     const(ubyte)[] front() const pure
     {
@@ -63,7 +94,18 @@ struct ByChunk(Stream)
 }
 
 /**
- * Convenience function for creating $(D ByChunk) range over a stream.
+ * Convenience function for creating a $(D ByChunk) range over a stream.
+ *
+ * Example:
+ * ---
+ * import std.digest.digest : digest;
+ * import std.digest.sha : SHA1;
+ * import io.file;
+ *
+ * // Hash a file, 4KiB chunks at a time
+ * ubyte[4096] buf;
+ * auto sha1 = digest!SHA1(File("foo").byChunk(buf));
+ * ---
  */
 auto byChunk(Stream)(Stream stream, size_t size = 4096)
     if (isSource!Stream)
@@ -97,12 +139,15 @@ unittest
 
 /**
  * Wraps a stream in a range interface such that blocks of a fixed size are read
- * from the source. It is assumed that the stream is buffered such that
+ * from the source. It is assumed that the stream is buffered so that
  * performance is not adversely affected.
  *
- * This range cannot be saved with $(D save()). As such, the usage of this
- * should not be mixed with the underlying stream without first seeking to a
- * specific location in the stream.
+ * Since streams and ranges are fundamentally different, this is useful for
+ * performing range operations on streams.
+ *
+ * Note: This is an input range and cannot be saved with $(D save()). Thus,
+ * usage of this should not be mixed with the underlying stream without first
+ * seeking to a specific location in the stream.
  */
 struct ByBlock(T, Stream)
     if (isSource!Stream)
@@ -118,6 +163,9 @@ struct ByBlock(T, Stream)
         bool _empty = false;
     }
 
+    /**
+     * Initializes the range with a source stream.
+     */
     this(Stream source)
     {
         _source = source;
@@ -127,29 +175,22 @@ struct ByBlock(T, Stream)
     }
 
     /**
-     * Removes one block from the stream. The range is considered empty when
-     * exactly 0 bytes can be read from the stream. Throws an exception if a
-     * partial block is read.
+     * Removes one block from the stream.
      */
     void popFront()
     {
-        immutable n = _source.read((cast(ubyte*)&_current)[0 .. T.sizeof]);
-
-        switch (n)
+        try
         {
-            case 0:
-                _empty = true;
-                break;
-            case T.sizeof:
-                _empty = false;
-                break;
-            default:
-                throw new ReadException("Read partial block from stream.");
+            _source.readExactly((cast(ubyte*)&_current)[0 .. T.sizeof]);
+        }
+        catch (ReadException e)
+        {
+            _empty = true;
         }
     }
 
     /**
-     * Gets the current block in the stream.
+     * Returns: The current block in the stream.
      */
     @property ref const(T) front() const pure nothrow
     {
@@ -157,7 +198,11 @@ struct ByBlock(T, Stream)
     }
 
     /**
-     * Returns true if there are no more blocks in the stream.
+     * The range is considered empty when less than $(D T.sizeof) bytes can be
+     * read from the stream.
+     *
+     * Returns: True if there are no more blocks in the stream and false
+     * otherwise.
      */
     @property bool empty() const pure nothrow
     {
@@ -167,6 +212,12 @@ struct ByBlock(T, Stream)
 
 /**
  * Helper function for constructing a block range.
+ *
+ * Example:
+ * ---
+ * import std.algorithm : equal;
+ * import std.range : take;
+ * ---
  */
 @property auto byBlock(T, Stream)(Stream stream)
     if (isSource!Stream)
@@ -190,16 +241,24 @@ unittest
         {7, 8, 9},
     ];
 
+    // Write some data to the file
     auto f = tempFile.file;
     f.put(data);
     f.position = 0;
 
+    // Read it back in, block-by-block
     assert(f.byBlock!Data.equal(data));
     assert(f.byBlock!Data.empty);
 }
 
-// Checks if the region ends with a single element separator.
-static private size_t endsWithSeparator(T, Separator)
+import std.range : back, isBidirectionalRange;
+
+/**
+ * Checks if the given region ends with the given separator.
+ *
+ * Returns: The number of elements that match.
+ */
+size_t endsWithSeparator(T, Separator)
     (const(T)[] region, const Separator separator)
     if (is(typeof(T.init == Separator.init) : bool))
 {
@@ -207,10 +266,8 @@ static private size_t endsWithSeparator(T, Separator)
     return region.back == separator;
 }
 
-import std.range : back, isBidirectionalRange;
-
-// Checks if the region ends with a range of elements.
-static private size_t endsWithSeparator(T, Separator)
+/// Ditto
+size_t endsWithSeparator(T, Separator)
     (const(T)[] region, Separator sep)
     if (isBidirectionalRange!Separator &&
         is(typeof(T.init == sep.back.init) : bool))
@@ -236,6 +293,7 @@ static private size_t endsWithSeparator(T, Separator)
 enum isSplitFunction(alias fn, T, Separator) =
     is(typeof(fn(T[].init, Separator.init)));
 
+///
 unittest
 {
     static assert(isSplitFunction!(endsWithSeparator, char, char));
@@ -353,13 +411,21 @@ unittest
 /**
  * Convenience function for returning a stream splitter.
  *
+ * Params:
+ *   T = Type of each element in the stream.
+ *   stream = A sink stream that can be read from.
+ *   separator = An element or range of elements to split on.
+ *
  * Example:
  * ---
- * // Reads and prints words.
+ * // Get a list of words from standard input.
  * import io;
- * import std.algorithm : filter;
- * foreach (word; stdin.splitter!char(' ').filter!(w => w != ""))
- *     println(word);
+ * import std.algorithm : map, filter;
+ * import std.array : array;
+ * auto words = stdin.splitter!char(' ')
+ *                   .filter!(w => w != "")
+ *                   .map!(w => w.idup)
+ *                   .array;
  * ---
  */
 auto splitter(T = char, Separator, Stream)(Stream stream, Separator separator)
