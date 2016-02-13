@@ -14,3 +14,6 @@ MODULES =
     $(MODULE io.stream.shim)
     $(MODULE io.stream.traits)
     $(MODULE io.stream.types)
+
+    $(MODULE io.range)
+    $(MODULE io.text)
