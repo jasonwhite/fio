@@ -153,42 +153,62 @@
 
 </dd>
 <dt>Description:</dt><dd>
-Provides access to the standard I/O streams: stdin, stdout, and stderr.</dd>
+Provides access to the standard I/O streams: <span class="inlinecode">stdin</span>, <span class="inlinecode">stdout</span>, and <span class="inlinecode"> stderr</span>. Note that each of these streams are buffered.
+<br><br>
+
+ To avoid conflict with <span class="inlinecode">std.stdio</span>, the file handles of each stream are
+ duplicated on static construction and closed upon static destruction.</dd>
 </dl>
 <hr><div class="row-fluid declaration"><h3>File <span class="symbol-target" id="stdin">&nbsp;</span><a class="symbol-link" href="#stdin">stdin</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>Standard input stream.
 </p>
-<p>Standard I/O streams.
-
-</p>
-<dt>Note:</dt><dd>
-To avoid conflict with other libraries accessing these standard
- streams, their file handle is duplicated and closed upon static destruction.</dd>
+<dt>Example:</dt><dd>
+ Counting the number of lines from standard input.
+<pre class="d_code"><span class="d_keyword">import</span> io;
+size_t lines = 0;
+<span class="d_keyword">foreach</span> (line; <u>stdin</u>.byLine)
+    ++lines;
+</pre>
+</dd>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>File <span class="symbol-target" id="stdout">&nbsp;</span><a class="symbol-link" href="#stdout">stdout</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>Standard output stream.
 </p>
-<p>Standard I/O streams.
-
-</p>
-<dt>Note:</dt><dd>
-To avoid conflict with other libraries accessing these standard
- streams, their file handle is duplicated and closed upon static destruction.</dd>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_keyword">import</span> io;
+<u>stdout</u>.write(<span class="d_string">"Hello world!\n"</span>);
+<u>stdout</u>.flush();
+</pre>
+</dd>
 </dl>
 </div>
 <hr><div class="row-fluid declaration"><h3>File <span class="symbol-target" id="stderr">&nbsp;</span><a class="symbol-link" href="#stderr">stderr</a>;
 </h3></div>
 <div class="declaration-content"><dl><p>Standard error stream.
 </p>
-<p>Standard I/O streams.
+<p><span class="symbol-target" id="stderr">&nbsp;</span><a class="symbol-link" href="#stderr">stderr</a> is often used for writing error messages or printing status
+ updates.
 
 </p>
-<dt>Note:</dt><dd>
-To avoid conflict with other libraries accessing these standard
- streams, their file handle is duplicated and closed upon static destruction.</dd>
+<dt>Example:</dt><dd>
+ Prints a useful status message.
+<pre class="d_code"><span class="d_keyword">import</span> core.thread : Thread;
+<span class="d_keyword">import</span> core.time : dur;
+
+<span class="d_keyword">immutable</span> status = <span class="d_string">".oO*"</span>;
+
+<span class="d_keyword">for</span> (size_t i = 0; ; ++i)
+{
+    Thread.sleep(dur!<span class="d_string">"msecs"</span>(100));
+    <u>stderr</u>.write(<span class="d_string">"Reticulating splines... "</span>);
+    <u>stderr</u>.write([status[i % status.length], '\r']);
+    <u>stderr</u>.flush();
+}
+</pre>
+</dd>
 </dl>
 </div>
 
