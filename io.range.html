@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<meta charset="utf-8">
+	<title>io.range - IO Streams documentation</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<!-- styles -->
+	<link href="bootDoc/assets/css/bootstrap.css" rel="stylesheet">
+	<style type="text/css">
+		body {
+		padding-top: 60px;
+		padding-bottom: 40px;
+		}
+		.sidebar-nav {
+		padding: 9px 0;
+		}
+	</style>
+	<link href="bootDoc/assets/css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="bootDoc/bootdoc.css" rel="stylesheet">
+
+	<!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+	<!--[if lt IE 9]>
+		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- fav and touch icons -->
+	<link rel="shortcut icon" href="bootDoc/assets/ico/favicon.ico">
+	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootDoc/assets/ico/apple-touch-icon-114-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootDoc/assets/ico/apple-touch-icon-72-precomposed.png">
+	<link rel="apple-touch-icon-precomposed" href="bootDoc/assets/ico/apple-touch-icon-57-precomposed.png">
+	
+	<!-- Introduce DDoc settings required by JavaScript -->
+	<script type="text/javascript">
+		var Title = 'io.range';
+		var SourceRepository = 'http://github.com/jasonwhite/io/tree/master/source';
+		var PackageSeparator = '.';
+	</script>
+	
+	<style type="text/css">
+		.ddoc-icon-variable { background-image: url('bootDoc/ddoc-icons/var.png'); }
+		.ddoc-icon-function { background-image: url('bootDoc/ddoc-icons/func.png'); }
+		.ddoc-icon-property { background-image: url('bootDoc/ddoc-icons/property.png'); }
+		.ddoc-icon-struct { background-image: url('bootDoc/ddoc-icons/struct.png'); }
+		.ddoc-icon-class { background-image: url('bootDoc/ddoc-icons/class.png'); }
+		.ddoc-icon-enum { background-image: url('bootDoc/ddoc-icons/enum.png'); }
+		.ddoc-icon-template { background-image: url('bootDoc/ddoc-icons/template.png'); }
+	</style>
+	</head>
+
+	<body>
+	<!--
+	JavaScript reaps the module list from this element.
+	This is required for the MODULES macro to be reusable
+	in a noscript element later.
+	-->
+	<ul id="module-list-source" class="hidden">
+		
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.range.html" title="io.range"><i class="icon-th"></i>io.range</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.text.html" title="io.text"><i class="icon-th"></i>io.text</a></li>
+	</ul>
+	
+	<div class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container-fluid">
+				<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<a class="brand" href="index.html">IO Streams</a>
+				<div class="nav-collapse">
+					<ul class="nav">
+						<li class="active"><a href="index.html">Reference</a></li>
+					</ul>
+					
+					<form id="gotosymbol" class="navbar-search pull-left hidden">
+						<input type="text" class="search-query" placeholder="Go to symbol in io.range" data-provide="typeahead" data-items="4">
+					</form>
+					
+					<p class="navbar-text pull-right"><a href="https://github.com/jasonwhite/io">Github Page</a></p>
+				</div><!--/.nav-collapse -->
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row-fluid">
+			<div class="span2">
+				<div class="well sidebar-nav">
+				<ul class="nav nav-list">
+					<li id="module-list" class="nav-header sidebar-list-entry">Modules<li>
+					<noscript>
+						
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.fixed.html" title="io.buffer.fixed"><i class="icon-th"></i>io.buffer.fixed</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.buffer.traits.html" title="io.buffer.traits"><i class="icon-th"></i>io.buffer.traits</a></li>
+
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.flags.html" title="io.file.flags"><i class="icon-th"></i>io.file.flags</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.mmap.html" title="io.file.mmap"><i class="icon-th"></i>io.file.mmap</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.pipe.html" title="io.file.pipe"><i class="icon-th"></i>io.file.pipe</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stdio.html" title="io.file.stdio"><i class="icon-th"></i>io.file.stdio</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.stream.html" title="io.file.stream"><i class="icon-th"></i>io.file.stream</a></li>
+	<li class="sidebar-list-entry tree-leaf"><a href="io.file.temp.html" title="io.file.temp"><i class="icon-th"></i>io.file.temp</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.package.html" title="io.stream.package"><i class="icon-th"></i>io.stream.package</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.interfaces.html" title="io.stream.interfaces"><i class="icon-th"></i>io.stream.interfaces</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.shim.html" title="io.stream.shim"><i class="icon-th"></i>io.stream.shim</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.traits.html" title="io.stream.traits"><i class="icon-th"></i>io.stream.traits</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.stream.types.html" title="io.stream.types"><i class="icon-th"></i>io.stream.types</a></li>
+
+    <li class="sidebar-list-entry tree-leaf"><a href="io.range.html" title="io.range"><i class="icon-th"></i>io.range</a></li>
+    <li class="sidebar-list-entry tree-leaf"><a href="io.text.html" title="io.text"><i class="icon-th"></i>io.text</a></li>
+					</noscript>
+					<li id="symbol-list" class="nav-header sidebar-list-entry hidden">io.range</li>
+				</ul>
+				</div><!--/.well -->
+			</div><!--/span-->
+			
+			<div class="span10">
+				<div class="row-fluid">
+					<div class="span11">
+						<ul id="module-breadcrumb" class="breadcrumb">
+							<noscript><h1>io.range</h1></noscript>
+						</ul>
+						
+					</div>
+					<div class="span1 offset11">
+						<a href="index.html"><img src="bootDoc/assets/img/icon-github.png" alt="IO Streams"/></a>
+					</div>
+				</div>
+				<div id="declaration-list">
+					<dl><dt>License</dt><dd><a href="http://boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+</dd>
+<dt>Authors</dt><dd>Jason White
+
+</dd>
+<dt>Description:</dt><dd>
+This module provides range interfaces for streams. This is useful for using
+ many of the range operations in <span class="inlinecode">std.range</span> and <span class="inlinecode">std.algorithm</span>.
+<br><br>
+
+ There is an important distinction between streams and ranges to be made.
+ Fundamentally, a stream is a unidirectional <i>stream</i> of bytes. That is,
+ there is no going backwards and there is no saving the current position (as
+ bidirectional and forward ranges can do). This provides a good mapping to
+ input ranges and output ranges. As streams only operate on raw bytes, ranges
+ provide an abstraction to operate on more complex data types.</dd>
+</dl>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="ByChunk">&nbsp;</span><a class="symbol-link" href="#ByChunk">ByChunk</a>(Stream) if (isSource!Stream);
+</h3></div>
+<div class="declaration-content"><dl><p>Range that reads up to a fixed size chunk of data from a stream at a time.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(Stream <i>source</i>, size_t <i>size</i> = 4096);
+</h3></div>
+<div class="declaration-content"><dl><p>Initializes the range. A byte buffer with the given <i>size</i> is allocated to
+ hold the chunks.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Stream <i>source</i></td>
+<td>A stream that can be read from.</td></tr>
+<tr><td>size_t <i>size</i></td>
+<td>The <i>size</i> of each chunk to read at a time.</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>this(Stream <i>source</i>, ubyte[] <i>buffer</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Initializes the range with the specified <i>buffer</i>. This is useful for
+ providing your own <i>buffer</i> that may be stack allocated.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>Stream <i>source</i></td>
+<td>A stream that can be read from.</td></tr>
+<tr><td>ubyte[] <i>buffer</i></td>
+<td>A byte array to hold each chunk as it is read.</td></tr>
+</table></dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="popFront">&nbsp;</span><a class="symbol-link" href="#popFront">popFront</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Reads the next chunk from the stream.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const pure const(ubyte)[] <span class="symbol-target" id="front">&nbsp;</span><a class="symbol-link" href="#front">front</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>The current chunk of the stream.
+<br><br>
+
+ Note that a full chunk is not guaranteed to be returned. In the event of
+ a partial read from the stream, this will be less than the maximum chunk
+ size. Code should be impartial to the size of the returned chunk.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const pure nothrow bool <span class="symbol-target" id="empty">&nbsp;</span><a class="symbol-link" href="#empty">empty</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns <span class="d_keyword">true</span> if there are no more chunks to be read from the stream.</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>auto <span class="symbol-target" id="byChunk">&nbsp;</span><a class="symbol-link" href="#byChunk">byChunk</a>(Stream)(Stream <i>stream</i>, size_t <i>size</i> = 4096) if (isSource!Stream);
+<br>auto <span class="symbol-target" id="byChunk">&nbsp;</span><a class="symbol-link" href="#byChunk">byChunk</a>(Stream)(Stream <i>stream</i>, ubyte[] <i>buffer</i>) if (isSource!Stream);
+</h3></div>
+<div class="declaration-content"><dl><p>Convenience function for creating a <span class="inlinecode">ByChunk</span> range over a <i>stream</i>.
+</p>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_keyword">import</span> std.digest.digest : digest;
+<span class="d_keyword">import</span> std.digest.sha : SHA1;
+<span class="d_keyword">import</span> io.file;
+
+<span class="d_comment">// Hash a file, 4KiB chunks at a time
+</span><span class="d_keyword">ubyte</span>[4096] buf;
+<span class="d_keyword">auto</span> sha1 = digest!SHA1(File(<span class="d_string">"foo"</span>).<u>byChunk</u>(buf));
+</pre>
+</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="ByBlock">&nbsp;</span><a class="symbol-link" href="#ByBlock">ByBlock</a>(T, Stream) if (isSource!Stream);
+</h3></div>
+<div class="declaration-content"><dl><p>Wraps a stream in a range interface such that blocks of a fixed size are read
+ from the source. It is assumed that the stream is buffered so that
+ performance is not adversely affected.
+</p>
+<p>Since streams and ranges are fundamentally different, this is useful for
+ performing range operations on streams.
+
+</p>
+<dt>Note:</dt><dd>
+This is an input range and cannot be saved with <span class="inlinecode">save()</span>. Thus,
+ usage of this should not be mixed with the underlying stream without first
+ seeking to a specific location in the stream.</dd>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>this(Stream <i>source</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Initializes the range with a <i>source</i> stream.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="popFront">&nbsp;</span><a class="symbol-link" href="#popFront">popFront</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Removes one block from the stream.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const pure nothrow @property ref const(T) <span class="symbol-target" id="front">&nbsp;</span><a class="symbol-link" href="#front">front</a>();
+</h3></div>
+<div class="declaration-content"><dl><dt>Returns</dt><dd>The current block in the stream.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const pure nothrow @property bool <span class="symbol-target" id="empty">&nbsp;</span><a class="symbol-link" href="#empty">empty</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>The range is considered <span class="symbol-target" id="empty">&nbsp;</span><a class="symbol-link" href="#empty">empty</a> when less than <span class="inlinecode">T.sizeof</span> bytes can be
+ read from the stream.
+</p>
+<dt>Returns</dt><dd>True if there are no more blocks in the stream and <span class="d_keyword">false</span>
+ otherwise.</dd>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>@property auto <span class="symbol-target" id="byBlock">&nbsp;</span><a class="symbol-link" href="#byBlock">byBlock</a>(T, Stream)(Stream <i>stream</i>) if (isSource!Stream);
+</h3></div>
+<div class="declaration-content"><dl><p>Helper function for constructing a block range.
+</p>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_keyword">import</span> std.algorithm : equal;
+<span class="d_keyword">import</span> std.range : take;
+</pre>
+</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="endsWithSeparator">&nbsp;</span><a class="symbol-link" href="#endsWithSeparator">endsWithSeparator</a>(T, Separator)(const(T)[] <i>region</i>, const Separator <i>separator</i>) if (is(typeof(T.init == Separator.init) : bool));
+<br>size_t <span class="symbol-target" id="endsWithSeparator">&nbsp;</span><a class="symbol-link" href="#endsWithSeparator">endsWithSeparator</a>(T, Separator)(const(T)[] <i>region</i>, Separator <i>sep</i>) if (isBidirectionalRange!Separator &amp;&amp; is(typeof(T.init == <i>sep</i>.back.init) : bool));
+</h3></div>
+<div class="declaration-content"><dl><p>Checks if the given <i>region</i> ends with the given <i>separator</i>.
+</p>
+<dt>Returns</dt><dd>The number of elements that match.</dd>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>enum auto <span class="symbol-target" id="isSplitFunction">&nbsp;</span><a class="symbol-link" href="#isSplitFunction">isSplitFunction</a>(alias fn, T, Separator);
+</h3></div>
+<div class="declaration-content"><dl><p>Checks if the given function can be used with <span class="inlinecode">Splitter</span>.</p>
+<dt>Examples</dt><dd><pre class="d_code">
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(<u>isSplitFunction</u>!(endsWithSeparator, <span class="d_keyword">char</span>, <span class="d_keyword">char</span>));
+<span class="d_keyword">static</span> <span class="d_keyword">assert</span>(<u>isSplitFunction</u>!(endsWithSeparator, <span class="d_keyword">char</span>, string));
+</pre>
+</dd></dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>struct <span class="symbol-target" id="Splitter">&nbsp;</span><a class="symbol-link" href="#Splitter">Splitter</a>(T, Separator, Stream, alias splitFn = endsWithSeparator!(T, Separator)) if (isSource!Stream &amp;&amp; isSplitFunction!(splitFn, T, Separator));
+</h3></div>
+<div class="declaration-content"><dl><p>Splits a stream using a separator. The separator can be a single element or a
+ bidirectional range of elements.</p>
+</dl>
+<div class="offset1 member-list"><hr><div class="row-fluid declaration"><h3>const pure nothrow const(T)[] <span class="symbol-target" id="front">&nbsp;</span><a class="symbol-link" href="#front">front</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Gets the current region in the stream.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>const pure nothrow bool <span class="symbol-target" id="empty">&nbsp;</span><a class="symbol-link" href="#empty">empty</a>();
+</h3></div>
+<div class="declaration-content"><dl><p>Returns <span class="d_keyword">true</span> if there are no more regions in the splitter.</p>
+</dl>
+</div>
+</div>
+</div>
+<hr><div class="row-fluid declaration"><h3>auto <span class="symbol-target" id="splitter">&nbsp;</span><a class="symbol-link" href="#splitter">splitter</a>(T = char, Separator, Stream)(Stream <i>stream</i>, Separator <i>separator</i>) if (isSource!Stream);
+</h3></div>
+<div class="declaration-content"><dl><p>Convenience function for returning a <i>stream</i> <span class="symbol-target" id="splitter">&nbsp;</span><a class="symbol-link" href="#splitter">splitter</a>.
+</p>
+<dt>Parameters</dt><dd><table class="table table-condensed table-bordered"><tr><td>T</td>
+<td>Type of each element in the <i>stream</i>.</td></tr>
+<tr><td>Stream <i>stream</i></td>
+<td>A sink <i>stream</i> that can be read from.</td></tr>
+<tr><td>Separator <i>separator</i></td>
+<td>An element or range of elements to split on.</td></tr>
+</table></dd>
+<dt>Example:</dt><dd>
+<pre class="d_code"><span class="d_comment">// Get a list of words from standard input.
+</span><span class="d_keyword">import</span> io;
+<span class="d_keyword">import</span> std.algorithm : map, filter;
+<span class="d_keyword">import</span> std.array : array;
+<span class="d_keyword">auto</span> words = stdin.<u>splitter</u>!<span class="d_keyword">char</span>(' ')
+                  .filter!(w =&gt; w != <span class="d_string">""</span>)
+                  .map!(w =&gt; w.idup)
+                  .array;
+</pre>
+</dd>
+</dl>
+</div>
+
+
+				</div>
+				
+				<hr>
+				
+				<footer class="pull-left">
+					<p>Page generated with <a href="https://github.com/JakobOvrum/bootDoc">bootDoc</a>.</p>
+				</footer>
+				
+				<footer class="pull-right">
+					<p>&copy; Jason White 2014-2016</p>
+				</footer>
+			</div>
+		</div>
+	</div><!--/.fluid-container-->
+
+	<!-- Bootstrap javascript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="bootDoc/assets/js/jquery.min.js"></script>
+	<script src="bootDoc/assets/js/bootstrap.min.js"></script>
+	
+	<!-- bootDoc javascript
+	================================================== -->
+	<script src="bootDoc/bootdoc.js"></script>
+	
+	</body>
+</html>

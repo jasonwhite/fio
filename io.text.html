@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 	<meta charset="utf-8">
-	<title>io.file.stdio - IO Streams documentation</title>
+	<title>io.text - IO Streams documentation</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="description" content="">
 	<meta name="author" content="">
@@ -34,7 +34,7 @@
 	
 	<!-- Introduce DDoc settings required by JavaScript -->
 	<script type="text/javascript">
-		var Title = 'io.file.stdio';
+		var Title = 'io.text';
 		var SourceRepository = 'http://github.com/jasonwhite/io/tree/master/source';
 		var PackageSeparator = '.';
 	</script>
@@ -93,7 +93,7 @@
 					</ul>
 					
 					<form id="gotosymbol" class="navbar-search pull-left hidden">
-						<input type="text" class="search-query" placeholder="Go to symbol in io.file.stdio" data-provide="typeahead" data-items="4">
+						<input type="text" class="search-query" placeholder="Go to symbol in io.text" data-provide="typeahead" data-items="4">
 					</form>
 					
 					<p class="navbar-text pull-right"><a href="https://github.com/jasonwhite/io">Github Page</a></p>
@@ -129,7 +129,7 @@
     <li class="sidebar-list-entry tree-leaf"><a href="io.range.html" title="io.range"><i class="icon-th"></i>io.range</a></li>
     <li class="sidebar-list-entry tree-leaf"><a href="io.text.html" title="io.text"><i class="icon-th"></i>io.text</a></li>
 					</noscript>
-					<li id="symbol-list" class="nav-header sidebar-list-entry hidden">io.file.stdio</li>
+					<li id="symbol-list" class="nav-header sidebar-list-entry hidden">io.text</li>
 				</ul>
 				</div><!--/.well -->
 			</div><!--/span-->
@@ -138,7 +138,7 @@
 				<div class="row-fluid">
 					<div class="span11">
 						<ul id="module-breadcrumb" class="breadcrumb">
-							<noscript><h1>io.file.stdio</h1></noscript>
+							<noscript><h1>io.text</h1></noscript>
 						</ul>
 						
 					</div>
@@ -149,46 +149,44 @@
 				<div id="declaration-list">
 					<dl><dt>License</dt><dd><a href="http://boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
 </dd>
-<dt>Authors</dt><dd>Jason White
-
-</dd>
-<dt>Description:</dt><dd>
-Provides access to the standard I/O streams: stdin, stdout, and stderr.</dd>
+<dt>Authors</dt><dd>Jason White</dd>
 </dl>
-<hr><div class="row-fluid declaration"><h3>File <span class="symbol-target" id="stdin">&nbsp;</span><a class="symbol-link" href="#stdin">stdin</a>;
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="print">&nbsp;</span><a class="symbol-link" href="#print">print</a>(Stream, T...)(Stream <i>stream</i>, auto ref T <i>args</i>) if (isSink!Stream);
+<br>size_t <span class="symbol-target" id="print">&nbsp;</span><a class="symbol-link" href="#print">print</a>(T...)(auto ref T <i>args</i>) if (T.length &gt; 0 &amp;&amp; !isSink!(T[0]));
 </h3></div>
-<div class="declaration-content"><dl><p>Standard input stream.
-</p>
-<p>Standard I/O streams.
-
-</p>
-<dt>Note:</dt><dd>
-To avoid conflict with other libraries accessing these standard
- streams, their file handle is duplicated and closed upon static destruction.</dd>
+<div class="declaration-content"><dl><p>Serializes the given arguments to a text representation without a trailing
+ new line.</p>
 </dl>
 </div>
-<hr><div class="row-fluid declaration"><h3>File <span class="symbol-target" id="stdout">&nbsp;</span><a class="symbol-link" href="#stdout">stdout</a>;
+<hr><div class="row-fluid declaration"><h3>size_t <span class="symbol-target" id="println">&nbsp;</span><a class="symbol-link" href="#println">println</a>(T...)(auto ref T <i>args</i>);
 </h3></div>
-<div class="declaration-content"><dl><p>Standard output stream.
-</p>
-<p>Standard I/O streams.
-
-</p>
-<dt>Note:</dt><dd>
-To avoid conflict with other libraries accessing these standard
- streams, their file handle is duplicated and closed upon static destruction.</dd>
+<div class="declaration-content"><dl><p>Serializes the given arguments to a text representation followed by a new
+ line.</p>
 </dl>
 </div>
-<hr><div class="row-fluid declaration"><h3>File <span class="symbol-target" id="stderr">&nbsp;</span><a class="symbol-link" href="#stderr">stderr</a>;
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="printf">&nbsp;</span><a class="symbol-link" href="#printf">printf</a>(Stream, T...)(Stream <i>stream</i>, string <i>format</i>, auto ref T <i>args</i>) if (isSink!Stream);
+<br>void <span class="symbol-target" id="printf">&nbsp;</span><a class="symbol-link" href="#printf">printf</a>(T...)(string <i>format</i>, auto ref T <i>args</i>);
 </h3></div>
-<div class="declaration-content"><dl><p>Standard error stream.
-</p>
-<p>Standard I/O streams.
-
-</p>
-<dt>Note:</dt><dd>
-To avoid conflict with other libraries accessing these standard
- streams, their file handle is duplicated and closed upon static destruction.</dd>
+<div class="declaration-content"><dl><p>Serializes the given arguments according to the given <i>format</i> specifier
+ string.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>void <span class="symbol-target" id="printfln">&nbsp;</span><a class="symbol-link" href="#printfln">printfln</a>(Stream, T...)(Stream <i>stream</i>, string <i>format</i>, auto ref T <i>args</i>) if (isSink!Stream);
+<br>void <span class="symbol-target" id="printfln">&nbsp;</span><a class="symbol-link" href="#printfln">printfln</a>(T...)(string <i>format</i>, auto ref T <i>args</i>);
+</h3></div>
+<div class="declaration-content"><dl><p>Like <span class="inlinecode">printf</span>, but also writes a new line.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>@property auto <span class="symbol-target" id="byLine">&nbsp;</span><a class="symbol-link" href="#byLine">byLine</a>(T = char, Stream)(Stream <i>stream</i>) if (isSource!Stream);
+</h3></div>
+<div class="declaration-content"><dl><p>Convenience function for returning a delimiter range that iterates over
+ lines.</p>
+</dl>
+</div>
+<hr><div class="row-fluid declaration"><h3>@property auto <span class="symbol-target" id="byLineCopy">&nbsp;</span><a class="symbol-link" href="#byLineCopy">byLineCopy</a>(T = char, Stream)(Stream <i>stream</i>) if (isSource!Stream);
+</h3></div>
+<div class="declaration-content"><dl><p>Like <span class="inlinecode">byLine</span>, but duplicates each line. Obviously, this is less efficient
+ than using <span class="inlinecode">byLine</span>.</p>
 </dl>
 </div>
 
