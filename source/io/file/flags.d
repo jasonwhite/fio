@@ -286,7 +286,7 @@ struct FileFlags
     }
 
     /**
-     * Parses an fopen-style mode string such as "r+". That all possible mode
+     * Parses an $(D fopen)-style mode string such as "r+". All possible mode
      * strings include:
      *
      * $(TABLE

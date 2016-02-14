@@ -55,7 +55,7 @@ __gshared
      * import core.thread : Thread;
      * import core.time : dur;
      *
-     * immutable status = ".oO*";
+     * immutable status = `|/-\`;
      *
      * for (size_t i = 0; ; ++i)
      * {
