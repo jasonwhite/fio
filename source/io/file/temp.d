@@ -65,7 +65,33 @@ private wstring tempDirImpl()
 }
 
 /**
- * Returns a cached path to the temporary directory.
+ * Returns the path to a directory for temporary files.
+ *
+ * On Windows, this function returns the result of calling the Windows API
+ * function
+ * $(LINK2 http://msdn.microsoft.com/en-us/library/windows/desktop/aa364992.aspx, $(D GetTempPath)).
+ *
+ * On POSIX platforms, it searches through the following list of directories and
+ * returns the first one which is found to exist:
+ * $(OL
+ *     $(LI The directory given by the $(D TMPDIR) environment variable.)
+ *     $(LI The directory given by the $(D TEMP) environment variable.)
+ *     $(LI The directory given by the $(D TMP) environment variable.)
+ *     $(LI $(D /tmp))
+ *     $(LI $(D /var/tmp))
+ *     $(LI $(D /usr/tmp))
+ * )
+ *
+ * On all platforms, $(D tempDir) returns $(D ".") on failure, representing the
+ * current working directory.
+ *
+ * The return value of the function is cached, so the procedures described above
+ * will only be performed the first time the function is called. All subsequent
+ * runs will return the same string, regardless of whether environment variables
+ * and directory structures have changed in the meantime.
+ *
+ * The POSIX $(D tempDir) algorithm is inspired by Python's
+ * $(LINK2 http://docs.python.org/library/tempfile.html#tempfile.tempdir, $(D tempfile.tempdir)).
  */
 T tempDir(T = string)() @trusted
     if (is(T : string) || is(T : wstring))
@@ -83,12 +109,31 @@ T tempDir(T = string)() @trusted
     return cache;
 }
 
+/**
+ * Struct representing a temporary file. Returned by $(LREF tempFile).
+ */
 struct TempFile(File, Path)
 {
+    /**
+     * The opened file stream. If $(D AutoDelete.yes) is specified, when this is
+     * closed, the file is deleted.
+     */
     File file;
+
+    /**
+     * Path to the file. This is not guaranteed to exist if $(D AutoDelete.yes)
+     * is specified. For example, on POSIX, the file is deleted as soon as it is
+     * created such that, when the last file descriptor to it is closed, the
+     * file is deleted. If $(D AutoDelete.no) is specified, this path $(I is)
+     * guaranteed to exist.
+     */
     Path path;
 }
 
+/**
+ * Used with $(LREF tempFile) to choose if a temporary file should be deleted
+ * automatically when it is closed.
+ */
 enum AutoDelete
 {
     no,
@@ -99,17 +144,39 @@ enum AutoDelete
  * Creates a temporary file. The file is automatically deleted when it is no
  * longer referenced. The temporary file is always opened with both read and
  * write access.
+ *
+ * Params:
+ *  autoDelete = If set to $(D AutoDelete.yes) (the default), the file is
+ *               deleted from the file system after the file handle is closed.
+ *               Otherwise, the file must be deleted manually.
+ *  dir = Directory to create the temporary file in. By default, this is $(LREF
+ *        tempDir).
+ *
+ * Example:
+ * Creates a temporary file and writes to it.
+ * ---
+ * auto f = tempFile.file;
+ * assert(f.position == 0);
+ * f.write("Hello");
+ * assert(f.position == 5);
+ * ---
+ *
+ * Example:
+ * Creates a temporary file, but doesn't delete it. This is useful to ensure a
+ * uniquely named file exists so that it can be written to by another process.
+ * ---
+ * auto path = tempFile(AutoDelete.no).path;
+ * ---
  */
 version (Posix)
 TempFile!(F, string) tempFile(F = File)(AutoDelete autoDelete = AutoDelete.yes,
         string dir = tempDir)
 {
-    /* Implementation note: Since Linux 3.11, there is the flag
-     * O_TMPFILE which can be used to open a temporary file. This
-     * creates an unnamed inode in the specified directory. Because the
-     * inode is unnamed, it will be automatically deleted once the file
-     * descriptor is closed. In the future, perhaps 2014-2016, once Linux
-     * 3.11 is not so new, this flag should be used instead.
+    /* Implementation note: Since Linux 3.11, there is the flag O_TMPFILE which
+     * can be used to open a temporary file. This creates an unnamed inode in
+     * the specified directory. Because the inode is unnamed, it will be
+     * automatically deleted once the file descriptor is closed. In the future,
+     * once Linux 3.11 is not so new, this flag could be used instead.
      */
 
     import core.sys.posix.stdlib : mkstemp;
@@ -150,7 +217,6 @@ TempFile!(F, T) tempFile(F = File, T = string)(
         "Failed to generate temporary file path"
         );
 
-    // FIXME: Not very elegant. There is no wchar* overload for fromStringz.
     wchar[] path = buf[0 .. wcslen(buf.ptr)];
 
     auto h = CreateFileW(
@@ -188,7 +254,6 @@ TempFile!(F, T) tempFile(F = File, T = string)(
         return TempFile(F(h), assumeUnique(path));
 }
 
-///
 unittest
 {
     auto f = tempFile.file;
@@ -196,4 +261,3 @@ unittest
     f.write("Hello");
     assert(f.position == 5);
 }
-
