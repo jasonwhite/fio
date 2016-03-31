@@ -86,7 +86,7 @@ T[] readAll(T=ubyte, Stream)(auto ref Stream stream, long upTo = long.max)
 
     immutable remaining = min((stream.length - stream.position)/T.sizeof, upTo);
 
-    auto buf = uninitializedArray!(T)(remaining);
+    auto buf = uninitializedArray!(T[])(remaining);
 
     immutable bytesRead = stream.read(buf);
 
