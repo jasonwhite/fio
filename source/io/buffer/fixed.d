@@ -8,6 +8,7 @@
  */
 module io.buffer.fixed;
 
+import io.stream.types;
 import io.stream.traits;
 import io.buffer.traits;
 
