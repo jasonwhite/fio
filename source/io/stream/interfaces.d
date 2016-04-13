@@ -5,6 +5,7 @@
  */
 module io.stream.interfaces;
 
+import io.stream.types;
 import io.stream.traits;
 
 /**
