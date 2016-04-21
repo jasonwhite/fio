@@ -70,9 +70,9 @@ void writeExactly(Stream, T)(auto ref Stream stream, in T[] buf)
 
 // Ditto
 void writeExactly(Stream, T)(auto ref Stream stream, const auto ref T value)
-    if (!isArray!T)
+    if (isSink!Stream && !isArray!T)
 {
-    write((cast(ubyte*)&value)[0 .. T.sizeof]);
+    stream.writeExactly((cast(ubyte*)&value)[0 .. T.sizeof]);
 }
 
 /**
