@@ -46,13 +46,26 @@ Pipe!F pipe(F = File)()
 ///
 unittest
 {
-    auto p = pipe!UnbufferedFile();
+    import core.thread : Thread;
 
-    // Write to one end of the pipe...
-    immutable message = "Indubitably.";
-    p.writeEnd.write(message);
+    immutable message = "The quick brown fox jumps over the lazy dog.";
 
-    // ...and read from it on the other.
+    auto p = pipe();
+
+    void writer()
+    {
+        p.writeEnd.write(message);
+
+        // Since this is buffered, it must be flushed in order to avoid a
+        // deadlock.
+        p.writeEnd.flush();
+    }
+
+    auto thread = new Thread(&writer).start();
+
+    // Read the message from the other thread.
     char[message.length] buf;
     assert(buf[0 .. p.readEnd.read(buf)] == message);
+
+    thread.join();
 }
