@@ -173,22 +173,6 @@ private struct MemoryMapImpl(T)
     }
 
     /**
-     * An anonymous mapping. An anonymous mapping is not backed by any file. Its
-     * contents are initialized to 0. This is equivalent to allocating memory.
-     */
-    /*this(Access access, size_t length, bool share = true, void* address = null)
-    {
-        version (Posix)
-        {
-            int flags = MAP_ANON | (share ? MAP_SHARED : MAP_PRIVATE);
-            void *p = mmap(address, length, prot(access), flags, -1, 0);
-            sysEnforce(p != MAP_FAILED, "Failed to memory map file");
-
-            data = p[0 .. length];
-        }
-    }*/
-
-    /**
      * Unmaps the file from memory and writes back any changes to the file
      * system.
      */
@@ -215,16 +199,6 @@ private struct MemoryMapImpl(T)
                 );
         }
     }
-
-    /*void remap(size_t length, size_t offset = 0, bool share = true)
-    {
-        version (Posix)
-        {
-            int flags = (share ? MAP_SHARED : MAP_PRIVATE);
-            void *p = mremap(data.ptr, data.length, length, flags);
-            sysEnforce(ret == 0, "Failed to remap memory");
-        }
-    }*/
 
     /**
      * Synchronously writes any pending changes to the file on the file system.
