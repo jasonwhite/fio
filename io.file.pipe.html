@@ -156,15 +156,28 @@
 <div class="declaration-content"><dl><p>Creates an unnamed, unidirectional <span class="symbol-target" id="pipe">&nbsp;</span><a class="symbol-link" href="#pipe">pipe</a> that can be written to on one end and
  read from on the other.</p>
 <dt>Examples</dt><dd><pre class="d_code">
-<span class="d_keyword">auto</span> p = <u>pipe</u>!UnbufferedFile();
+<span class="d_keyword">import</span> core.thread : Thread;
 
-<span class="d_comment">// Write to one end of the pipe...
-</span><span class="d_keyword">immutable</span> message = <span class="d_string">"Indubitably."</span>;
-p.writeEnd.write(message);
+<span class="d_keyword">immutable</span> message = <span class="d_string">"The quick brown fox jumps over the lazy dog."</span>;
 
-<span class="d_comment">// ...and read from it on the other.
+<span class="d_keyword">auto</span> p = <u>pipe</u>();
+
+<span class="d_keyword">void</span> writer()
+{
+    p.writeEnd.write(message);
+
+    <span class="d_comment">// Since this is buffered, it must be flushed in order to avoid a
+</span>    <span class="d_comment">// deadlock.
+</span>    p.writeEnd.flush();
+}
+
+<span class="d_keyword">auto</span> thread = <span class="d_keyword">new</span> Thread(&amp;writer).start();
+
+<span class="d_comment">// Read the message from the other thread.
 </span><span class="d_keyword">char</span>[message.length] buf;
 <span class="d_keyword">assert</span>(buf[0 .. p.readEnd.read(buf)] == message);
+
+thread.join();
 </pre>
 </dd></dl>
 </div>
