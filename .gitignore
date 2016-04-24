@@ -8,4 +8,5 @@
 /dub.selections.json
 /libio.a
 /__test__library__
+/__test__library__.exe
 /io.lib
