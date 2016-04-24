@@ -38,7 +38,7 @@ version (Posix)
 }
 else version (Windows)
 {
-    import std.c.windows.windows;
+    import core.sys.windows.windows;
 
     enum FILE_MAP_EXECUTE = 0x0020;
 
