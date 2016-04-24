@@ -3,8 +3,6 @@
  * License:   $(WEB boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Jason White
  *
- * TODO: Get this working on Windows.
- *
  * Synopsis:
  * ---
  * // Creates a 1 GiB file containing random data.
