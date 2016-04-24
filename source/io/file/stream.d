@@ -346,7 +346,7 @@ struct FileBase
         {
             DWORD n = void;
             sysEnforce(
-                ReadFile(_h, buf.ptr, buf.length, &n, null),
+                ReadFile(_h, buf.ptr, cast(uint)buf.length, &n, null),
                 "Failed to read from file"
                 );
             return n;
@@ -470,7 +470,7 @@ struct FileBase
         {
             DWORD written = void;
             sysEnforce(
-                WriteFile(_h, data.ptr, data.length, &written, null),
+                WriteFile(_h, data.ptr, cast(uint)data.length, &written, null),
                 "Failed to write to file"
                 );
             return written;
