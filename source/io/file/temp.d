@@ -249,9 +249,9 @@ TempFile!(F, T) tempFile(F = File, T = string)(
     );
 
     static if (is(F == class))
-        return TempFile(new F(h), assumeUnique(path));
+        return typeof(return)(new F(h), assumeUnique(path).to!T);
     else
-        return TempFile(F(h), assumeUnique(path));
+        return typeof(return)(F(h), assumeUnique(path).to!T);
 }
 
 unittest
