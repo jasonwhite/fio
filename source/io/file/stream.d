@@ -626,8 +626,8 @@ struct FileBase
         assert(f.skip(5) == 10);
         assert(f.seekTo(-5, From.end) == data.length - 5);
 
-        // Test large offset
-        assert(f.seekTo(long.max) == long.max);
+        // Test offset beyond the end of the file
+        assert(f.seekTo(int.max) == int.max);
     }
 
     /**
