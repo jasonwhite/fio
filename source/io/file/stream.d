@@ -140,7 +140,7 @@ struct FileBase
     private Handle _h = InvalidHandle;
 
     // Name of the file, for debugging purposes only.
-    debug string name;
+    debug const(char)[] name;
 
     /**
      * Opens or creates a file by name. By default, an existing file is opened
@@ -159,7 +159,7 @@ struct FileBase
      * f.write("Hello world!");
      * ---
      */
-    this(string name, FileFlags flags = FileFlags.readExisting)
+    this(const(char)[] name, FileFlags flags = FileFlags.readExisting)
     {
         debug this.name = name;
 
@@ -184,7 +184,7 @@ struct FileBase
                 );
         }
 
-        sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name ~"'");
+        sysEnforce(_h != InvalidHandle, "Failed to open file '"~ name.idup ~"'");
     }
 
     unittest
