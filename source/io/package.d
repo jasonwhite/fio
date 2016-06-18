@@ -7,6 +7,7 @@ module io;
 
 public import io.stream,
               io.file,
+              io.socket,
               io.buffer,
               io.text,
               io.range;
