@@ -9,6 +9,8 @@ MODULES =
 	$(MODULE io.file.stream)
 	$(MODULE io.file.temp)
 
+    $(MODULE io.socket.stream)
+
     $(MODULE io.stream.package)
     $(MODULE io.stream.interfaces)
     $(MODULE io.stream.shim)
