@@ -1,3 +1,5 @@
+:rotating_light: **This library is unmaintained. Please see https://github.com/MartinNowak/io instead.** :rotating_light:
+
 [buildbadge]: https://travis-ci.org/jasonwhite/io.svg?branch=master
 [buildstatus]: https://travis-ci.org/jasonwhite/io
 
